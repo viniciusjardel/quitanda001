@@ -310,6 +310,9 @@ window.openDeliveryModal = () =>
 window.closeDeliveryModal = () =>
   document.getElementById('deliveryModal').classList.add('hidden');
 
+window.closePaymentConfirmModal = () =>
+  document.getElementById('paymentConfirmModal').classList.add('hidden');
+
 window.selectDeliveryType = type => {
   deliveryType = type;
   document.getElementById('deliveryForm').classList.toggle('hidden', type !== 'delivery');
@@ -318,7 +321,47 @@ window.selectDeliveryType = type => {
 
 window.selectPaymentMethod = method => {
   paymentMethod = method;
-  if (method === 'pix') generatePix();
+  
+  // Calcular total com delivery
+  const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const deliveryFee = deliveryType === 'delivery' ? 3 : 0;
+  const total = subtotal + deliveryFee;
+
+  // Configurar modal de confirmação
+  const confirmModal = document.getElementById('paymentConfirmModal');
+  const titleEl = document.getElementById('paymentConfirmTitle');
+  const messageEl = document.getElementById('paymentConfirmMessage');
+  const totalEl = document.getElementById('paymentConfirmTotal');
+  const confirmBtn = document.getElementById('paymentConfirmBtn');
+
+  totalEl.innerText = formatPrice(total);
+
+  if (method === 'pix') {
+    titleEl.innerText = '💜 Confirmar Pagamento com PIX';
+    messageEl.innerText = 'Você será redirecionado para gerar um código QR PIX. Após pagar, a confirmação será automática.';
+    confirmBtn.innerText = '✅ Gerar Código PIX';
+  } else if (method === 'card') {
+    titleEl.innerText = '💳 Confirmar Pagamento com Cartão';
+    messageEl.innerText = 'Você pagará com cartão de débito/crédito na entrega do seu pedido.';
+    confirmBtn.innerText = '✅ Confirmar Cartão na Entrega';
+  } else if (method === 'money') {
+    titleEl.innerText = '💵 Confirmar Pagamento em Dinheiro';
+    messageEl.innerText = 'Você pagará em dinheiro na entrega do seu pedido. Tenha a quantia exata se possível.';
+    confirmBtn.innerText = '✅ Confirmar Dinheiro na Entrega';
+  }
+
+  confirmModal.classList.remove('hidden');
+};
+
+window.confirmPaymentMethod = () => {
+  window.closePaymentConfirmModal();
+  
+  if (paymentMethod === 'pix') {
+    generatePix();
+  } else if (paymentMethod === 'card' || paymentMethod === 'money') {
+    // Processar pagamento na entrega
+    processPaymentOnDelivery();
+  }
 };
 
 // =======================
@@ -447,6 +490,84 @@ window.addEventListener('DOMContentLoaded', async () => {
     }
   }
 });
+
+// =======================
+// PAGAMENTO NA ENTREGA (CARTÃO / DINHEIRO)
+// =======================
+function processPaymentOnDelivery() {
+  const deliveryInfo = {
+    name: document.getElementById('deliveryName').value,
+    phone: document.getElementById('deliveryPhone').value,
+    address: document.getElementById('deliveryAddress').value,
+    bloco: document.getElementById('deliveryBloco').value,
+    apto: document.getElementById('deliveryApto').value,
+    type: deliveryType,
+    paymentMethod: paymentMethod === 'card' ? 'Cartão' : 'Dinheiro'
+  };
+
+  // Validar dados de entrega
+  if (!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.address) {
+    alert('⚠️ Por favor, preencha todos os dados de entrega');
+    return;
+  }
+
+  // Preparar dados do pedido
+  const total = cart.reduce((sum, i) => sum + i.price * i.quantity, 0) +
+    (deliveryType === 'delivery' ? 3 : 0);
+
+  const orderData = {
+    items: cart.map(i => ({
+      id: i.id,
+      name: i.name,
+      quantity: i.quantity,
+      price: i.price,
+      unit: i.unit
+    })),
+    deliveryInfo,
+    total,
+    paymentMethod: deliveryInfo.paymentMethod,
+    timestamp: new Date().toISOString()
+  };
+
+  // Salvar pedido no localStorage para rastreamento
+  const orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
+  orders.push(orderData);
+  localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
+
+  // Enviar para WhatsApp
+  const message = `
+🛍️ *NOVO PEDIDO - Quitanda Villa Natal*
+
+*Cliente:* ${deliveryInfo.name}
+*Telefone:* ${deliveryInfo.phone}
+*Endereço:* ${deliveryInfo.address}${deliveryInfo.bloco ? `, Bloco ${deliveryInfo.bloco}` : ''}${deliveryInfo.apto ? `, Apt ${deliveryInfo.apto}` : ''}
+
+*Produtos:*
+${cart.map(i => `• ${i.name} (${i.quantity}x) - R$ ${(i.price * i.quantity).toFixed(2)}`).join('\n')}
+
+${deliveryType === 'delivery' ? '🚗 *Entrega: Sim (+R$ 3,00)*' : '🏪 *Retirada: No Local*'}
+
+*Total: R$ ${total.toFixed(2).replace('.', ',').replace(',', '.')}*
+*Forma de Pagamento: ${deliveryInfo.paymentMethod}*
+  `.trim();
+
+  const encodedMessage = encodeURIComponent(message);
+  const whatsappUrl = `https://wa.me/5581971028677?text=${encodedMessage}`;
+
+  // Limpar carrinho
+  cart = [];
+  localStorage.removeItem('hortifruti_cart');
+  updateCartUI();
+
+  // Fechar modals e mostrar sucesso
+  closeDeliveryModal();
+  
+  // Abrir WhatsApp
+  setTimeout(() => {
+    window.open(whatsappUrl, '_blank');
+    alert(`✅ Pedido confirmado!\n\nForma de Pagamento: ${deliveryInfo.paymentMethod}\n\nUm texto foi enviado para o WhatsApp da loja.`);
+  }, 500);
+}
 
 // =======================
 // INIT
