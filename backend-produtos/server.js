@@ -39,6 +39,8 @@ db.exec(`
     apto TEXT,
     delivery_type TEXT NOT NULL,
     payment_method TEXT NOT NULL,
+    payment_status TEXT DEFAULT 'pendente',
+    payment_id TEXT,
     items TEXT NOT NULL,
     total REAL NOT NULL,
     status TEXT DEFAULT 'pendente',
@@ -240,7 +242,7 @@ app.get('/pedidos/:id', (req, res) => {
 // POST novo pedido
 app.post('/pedidos', (req, res) => {
   try {
-    const { customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, items, total } = req.body;
+    const { customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, payment_status, payment_id, items, total } = req.body;
     
     if (!customer_name || !customer_phone || !address || !items || !total) {
       return res.status(400).json({ error: 'Dados obrigatórios faltando' });
@@ -248,11 +250,25 @@ app.post('/pedidos', (req, res) => {
 
     const id = 'ped_' + Date.now();
     const stmt = db.prepare(`
-      INSERT INTO pedidos (id, customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, items, total, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+      INSERT INTO pedidos (id, customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, payment_status, payment_id, items, total, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     `);
     
-    stmt.run(id, customer_name, customer_phone, address, bloco || '', apto || '', delivery_type, payment_method, JSON.stringify(items), total, 'pendente');
+    stmt.run(
+      id, 
+      customer_name, 
+      customer_phone, 
+      address, 
+      bloco || '', 
+      apto || '', 
+      delivery_type, 
+      payment_method, 
+      payment_status || 'pendente', 
+      payment_id || null,
+      JSON.stringify(items), 
+      total, 
+      'pendente'
+    );
     
     console.log('✅ Pedido criado:', id);
     res.status(201).json({ id, message: 'Pedido criado com sucesso' });
@@ -262,12 +278,32 @@ app.post('/pedidos', (req, res) => {
   }
 });
 
-// PUT atualizar pedido (status ou notas)
+// PUT atualizar pedido (status, notas, payment_status)
 app.put('/pedidos/:id', (req, res) => {
   try {
-    const { status, notes } = req.body;
-    const stmt = db.prepare('UPDATE pedidos SET status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
-    stmt.run(status || null, notes || null, req.params.id);
+    const { status, notes, payment_status } = req.body;
+    
+    let query = 'UPDATE pedidos SET updated_at = CURRENT_TIMESTAMP';
+    const params = [];
+    
+    if (status !== undefined) {
+      query += ', status = ?';
+      params.push(status);
+    }
+    if (notes !== undefined) {
+      query += ', notes = ?';
+      params.push(notes);
+    }
+    if (payment_status !== undefined) {
+      query += ', payment_status = ?';
+      params.push(payment_status);
+    }
+    
+    query += ' WHERE id = ?';
+    params.push(req.params.id);
+    
+    const stmt = db.prepare(query);
+    stmt.run(...params);
     console.log('✅ Pedido atualizado:', req.params.id);
     res.json({ message: 'Pedido atualizado com sucesso' });
   } catch (error) {

@@ -71,6 +71,45 @@ const cleanLocalStorage = () => {
 const getStoredProducts = () =>
   JSON.parse(localStorage.getItem('hortifruti_products')) || [];
 
+// =======================
+// SALVAR PEDIDO NO BACKEND
+// =======================
+async function salvarPedidoNoBackend(pedido) {
+  try {
+    console.log('%c💾 Enviando pedido para backend...', 'color: blue; font-weight: bold;');
+    
+    const response = await fetch(`${PRODUCTS_API_URL}/pedidos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(pedido)
+    });
+
+    if (!response.ok) {
+      throw new Error(`Erro ${response.status}: ${response.statusText}`);
+    }
+
+    const data = await response.json();
+    console.log('%c✅ Pedido salvo no backend:', 'color: green; font-weight: bold;', data);
+    
+    // Também salvar em localStorage como backup
+    const orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
+    orders.push(pedido);
+    localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
+    
+    // Disparar evento de sincronização
+    window.dispatchEvent(new CustomEvent('pedidoAdicionado', { detail: pedido }));
+    
+    return data;
+  } catch (error) {
+    console.error('%c❌ Erro ao salvar pedido no backend:', 'color: red; font-weight: bold;', error);
+    // Fallback: salvar apenas em localStorage
+    const orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
+    orders.push(pedido);
+    localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
+    window.dispatchEvent(new CustomEvent('pedidoAdicionado', { detail: pedido }));
+  }
+}
+
 const saveCart = () => {
   try {
     const cartData = JSON.stringify(cart);
@@ -726,12 +765,8 @@ function iniciarPollingPix(id) {
         total
       };
       
-      const orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
-      orders.push(pedidoCompleto);
-      localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
-      
-      // Disparar evento de sincronização
-      window.dispatchEvent(new CustomEvent('pedidoAdicionado', { detail: pedidoCompleto }));
+      // Salvar no backend (e fallback em localStorage)
+      await salvarPedidoNoBackend(pedidoCompleto);
       
       localStorage.removeItem('hortifruti_cart');
       localStorage.removeItem('paymentId');
@@ -955,12 +990,8 @@ async function processPaymentOnDelivery() {
     total
   };
   
-  const orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
-  orders.push(pedidoCompleto);
-  localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
-  
-  // Disparar evento de sincronização para admin
-  window.dispatchEvent(new CustomEvent('pedidoAdicionado', { detail: pedidoCompleto }));
+  // Salvar no backend (e fallback em localStorage)
+  await salvarPedidoNoBackend(pedidoCompleto);
 
   // Enviar para WhatsApp
   const message = `

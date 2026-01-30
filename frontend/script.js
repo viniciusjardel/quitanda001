@@ -363,35 +363,63 @@ let currentPedidoId = null;
 // 📋 CARREGAR PEDIDOS
 // =======================
 async function loadPedidos() {
-    console.log('%c📋 CARREGANDO PEDIDOS...', 'color: blue; font-weight: bold;');
+    console.log('%c📋 CARREGANDO PEDIDOS DO BACKEND...', 'color: blue; font-weight: bold;');
     
-    // Carregar do localStorage primeiro (mais rápido)
-    const localOrders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
-    console.log('%c📦 Pedidos do localStorage:', 'color: cyan;', localOrders.length, localOrders);
-    
-    if (localOrders.length === 0) {
-        console.warn('%c⚠️ Nenhum pedido no localStorage!', 'color: orange;');
+    try {
+        // Tentar carregar do backend primeiro
+        const response = await fetch(`${API_URL}/pedidos`);
+        
+        if (!response.ok) {
+            throw new Error(`Erro ${response.status}: ${response.statusText}`);
+        }
+        
+        const backendOrders = await response.json();
+        console.log('%c✅ Pedidos carregados do backend:', 'color: green;', backendOrders.length);
+        
+        // Transformar pedidos do backend para formato compatível
+        allPedidos = backendOrders.map(order => ({
+            id: order.id,
+            customer_name: order.customer_name || 'N/A',
+            customer_phone: order.customer_phone || 'N/A',
+            address: order.address || 'Retirada no local',
+            bloco: order.bloco || '',
+            apto: order.apto || '',
+            delivery_type: order.delivery_type || 'local',
+            payment_method: order.payment_method || 'N/A',
+            payment_status: order.payment_status || 'pendente',
+            payment_id: order.payment_id,
+            items: typeof order.items === 'string' ? JSON.parse(order.items) : order.items || [],
+            total: order.total || 0,
+            status: order.status || 'pendente',
+            notes: order.notes || '',
+            created_at: order.created_at,
+            updated_at: order.updated_at
+        }));
+        
+    } catch (error) {
+        console.warn('%c⚠️ Erro ao carregar do backend, tentando localStorage...', 'color: orange;', error);
+        
+        // Fallback para localStorage
+        const localOrders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
+        allPedidos = localOrders.map(order => ({
+            id: order.id,
+            customer_name: order.customer_name || 'N/A',
+            customer_phone: order.customer_phone || 'N/A',
+            address: order.address || 'Retirada no local',
+            bloco: order.bloco || '',
+            apto: order.apto || '',
+            delivery_type: order.delivery_type || 'local',
+            payment_method: order.payment_method || 'N/A',
+            payment_status: order.payment_status || 'pendente',
+            payment_id: order.payment_id,
+            items: order.items || [],
+            total: order.total || 0,
+            status: 'pendente',
+            notes: '',
+            created_at: order.timestamp || new Date().toLocaleString('pt-BR'),
+            updated_at: order.timestamp || new Date().toLocaleString('pt-BR')
+        }));
     }
-    
-    // Transformar pedidos do localStorage para formato compatível
-    allPedidos = localOrders.map(order => ({
-        id: order.id, // Manter como é
-        customer_name: order.customer_name || 'N/A',
-        customer_phone: order.customer_phone || 'N/A',
-        address: order.address || 'Retirada no local',
-        bloco: order.bloco || '',
-        apto: order.apto || '',
-        delivery_type: order.delivery_type || 'local',
-        payment_method: order.payment_method || 'N/A',
-        payment_status: order.payment_status || 'pendente',
-        payment_id: order.payment_id,
-        items: order.items || [],
-        total: order.total || 0,
-        status: 'pendente',
-        notes: '',
-        created_at: order.timestamp || new Date().toLocaleString('pt-BR'),
-        updated_at: order.timestamp || new Date().toLocaleString('pt-BR')
-    }));
     
     // Ordenar por data (mais recentes primeiro)
     allPedidos.sort((a, b) => {
@@ -400,8 +428,7 @@ async function loadPedidos() {
         return dateB - dateA;
     });
     
-    console.log('%c✅ Pedidos carregados:', 'color: green;', allPedidos.length);
-    console.log('%c📊 Dados processados:', 'color: magenta;', allPedidos);
+    console.log('%c📊 Pedidos processados:', 'color: magenta;', allPedidos.length);
     renderPedidos(allPedidos);
 }
 
@@ -555,21 +582,41 @@ async function salvarPedidoChanges() {
 // Marcar pedido como pago (para Cartão/Dinheiro)
 function marcarComoPago(pedidoId) {
     console.log('%c💰 Marcando como pago:', 'color: blue;', pedidoId);
-    let orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
     
     // Comparar como string e número
-    const orderIndex = orders.findIndex(o => o.id == pedidoId || o.id === pedidoId || String(o.id) === String(pedidoId));
+    const pedido = allPedidos.find(p => p.id == pedidoId || p.id === pedidoId || String(p.id) === String(pedidoId));
     
-    if (orderIndex >= 0) {
-        orders[orderIndex].payment_status = 'pago';
-        localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
-        console.log('%c✅ Pedido marcado como pago', 'color: green;');
+    if (!pedido) {
+        console.error('%c❌ Pedido não encontrado', 'color: red;', 'ID:', pedidoId);
+        return;
+    }
+    
+    // Atualizar no backend
+    fetch(`${API_URL}/pedidos/${pedido.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ payment_status: 'pago' })
+    })
+    .then(response => {
+        if (!response.ok) throw new Error('Erro ao atualizar no backend');
+        console.log('%c✅ Pedido marcado como pago no backend', 'color: green;');
+        
+        // Atualizar em localStorage também
+        let orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
+        const orderIndex = orders.findIndex(o => o.id == pedidoId || o.id === pedidoId || String(o.id) === String(pedidoId));
+        if (orderIndex >= 0) {
+            orders[orderIndex].payment_status = 'pago';
+            localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
+        }
+        
         alert('✅ Pagamento marcado como confirmado!');
         loadPedidos();
         closePedidoModal();
-    } else {
-        console.error('%c❌ Pedido não encontrado para marcar como pago', 'color: red;', 'ID:', pedidoId);
-    }
+    })
+    .catch(error => {
+        console.error('%c❌ Erro ao marcar como pago:', 'color: red;', error);
+        alert('❌ Erro ao salvar no banco de dados. Tente novamente.');
+    });
 }
 
 // Buscar pedidos
