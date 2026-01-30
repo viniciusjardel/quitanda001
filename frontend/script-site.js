@@ -977,6 +977,8 @@ async function processPaymentOnDelivery() {
     apto: deliveryInfo.apto,
     delivery_type: deliveryType,
     payment_method: deliveryInfo.paymentMethod,
+    payment_status: 'pendente',
+    payment_id: null,
     items: cart.map(i => ({
       id: i.id,
       name: i.name,
