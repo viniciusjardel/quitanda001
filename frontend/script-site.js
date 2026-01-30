@@ -452,8 +452,12 @@ window.addEventListener('DOMContentLoaded', async () => {
 // INIT
 // =======================
 loadCart();
-await loadProducts();
-updateCartUI();
+
+// Carregar produtos de forma assíncrona
+(async () => {
+  await loadProducts();
+  updateCartUI();
+})();
 
 // sincronização simples entre abas
 window.addEventListener('storage', async e => {
