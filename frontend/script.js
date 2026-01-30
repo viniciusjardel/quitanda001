@@ -603,22 +603,25 @@ window.abrirPedidoModal = function(id) {
         // REMOVER CLASSE HIDDEN
         modal.classList.remove('hidden');
         
-        // APLICAR CSS DIRETO (porque Tailwind não está funcionando)
-        modal.style.position = 'fixed';
-        modal.style.top = '0';
-        modal.style.left = '0';
-        modal.style.right = '0';
-        modal.style.bottom = '0';
-        modal.style.width = '100%';
-        modal.style.height = '100%';
-        modal.style.display = 'flex';
-        modal.style.alignItems = 'center';
-        modal.style.justifyContent = 'center';
-        modal.style.zIndex = '9999';
-        modal.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
-        modal.style.padding = '1rem';
+        // APLICAR CSS DIRETO COM !important (porque Tailwind conflita)
+        modal.setAttribute('style', `
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            z-index: 9999 !important;
+            background-color: rgba(0, 0, 0, 0.7) !important;
+            padding: 1rem !important;
+        `);
         
         console.log('%c🔄 Classes do modal depois:', 'color: purple;', modal.className);
+        console.log('%c📊 Atributo style:', 'color: purple;', modal.getAttribute('style'));
         console.log('%c📊 getBoundingClientRect depois:', 'color: purple;', modal.getBoundingClientRect());
         console.log('%c✅ MODAL DEVE ESTAR VISÍVEL AGORA!', 'color: green; font-weight: bold; font-size: 14px;');
     } else {
