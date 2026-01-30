@@ -3,6 +3,30 @@ console.log('%c🚀 ADMIN PANEL LOADED', 'color: green; font-weight: bold; font-
 
 // URL DA API (alterar quando fazer deploy)
 const API_URL = 'https://quitanda-produtos-api.onrender.com'; // Será atualizada após deploy
+
+// =======================
+// DIAGNÓSTICO DE LOCALSTORAGE
+// =======================
+window.diagnosticarPedidos = function() {
+    console.clear();
+    console.log('%c📊 DIAGNÓSTICO DE PEDIDOS', 'color: purple; font-weight: bold; font-size: 16px;');
+    
+    const orders = localStorage.getItem('hortifruti_orders');
+    console.log('%c1️⃣ localStorage.getItem("hortifruti_orders"):', 'color: blue; font-weight: bold;', orders);
+    
+    if (orders) {
+        const parsed = JSON.parse(orders);
+        console.log('%c2️⃣ Pedidos parseados:', 'color: green; font-weight: bold;', parsed.length, 'pedidos');
+        console.table(parsed);
+        console.log('%c3️⃣ allPedidos global:', 'color: cyan; font-weight: bold;', allPedidos.length, 'pedidos');
+        console.table(allPedidos);
+    } else {
+        console.warn('%c⚠️ localStorage vazio! Nenhum pedido encontrado.', 'color: orange; font-weight: bold;');
+    }
+};
+
+// Chamar diagnóstico na inicialização
+window.diagnosticarPedidos();
 // Para testes locais: const API_URL = 'http://localhost:3001';
 
 let products = [];
