@@ -599,15 +599,25 @@ window.abrirPedidoModal = function(id) {
     
     if (modal) {
         console.log('%c🔄 Classes do modal antes:', 'color: purple;', modal.className);
+        console.log('%c📊 getBoundingClientRect antes:', 'color: purple;', modal.getBoundingClientRect());
+        
         modal.classList.remove('hidden');
+        
+        // TESTE VISUAL: Adicionar fundo vermelho temporariamente
+        modal.style.backgroundColor = 'rgba(255, 0, 0, 0.8)';
+        
         console.log('%c🔄 Classes do modal depois:', 'color: purple;', modal.className);
+        console.log('%c📊 getBoundingClientRect depois:', 'color: purple;', modal.getBoundingClientRect());
+        console.log('%c📊 getComputedStyle display:', 'color: purple;', window.getComputedStyle(modal).display);
+        console.log('%c📊 getComputedStyle backgroundColor:', 'color: purple;', window.getComputedStyle(modal).backgroundColor);
         
         // TESTE: Scroll para garantir que o modal está visível
         setTimeout(() => {
             modal.scrollIntoView({behavior: 'smooth', block: 'center'});
+            console.log('%c✅ scrollIntoView chamado', 'color: green;');
         }, 100);
         
-        console.log('%c✅ MODAL DEVE ESTAR VISÍVEL AGORA!', 'color: green; font-weight: bold; font-size: 14px;');
+        console.log('%c✅ MODAL DEVE ESTAR VISÍVEL AGORA COM FUNDO VERMELHO!', 'color: green; font-weight: bold; font-size: 14px;');
     } else {
         console.error('%c❌ ERRO CRÍTICO: Modal não encontrado no DOM!', 'color: red; font-weight: bold;');
     }
