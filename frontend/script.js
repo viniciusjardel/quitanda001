@@ -598,33 +598,50 @@ window.abrirPedidoModal = function(id) {
     console.log('%c📍 Buscando modal:', 'color: purple;', modal ? '✅ Encontrado' : '❌ NÃO ENCONTRADO');
     
     if (modal) {
-        console.log('%c🔄 Classes do modal antes:', 'color: purple;', modal.className);
+        // ESTRATÉGIA NUCLEAR: Criar overlay dinâmico via JavaScript
+        console.log('%c💣 Usando estratégia de overlay dinâmico!', 'color: red; font-weight: bold;');
         
-        // REMOVER TODAS AS CLASSES TAILWIND QUE CONFLITAM
-        modal.className = '';
+        // Criar overlay
+        let overlay = document.getElementById('modal-overlay-dynamic');
+        if (!overlay) {
+            overlay = document.createElement('div');
+            overlay.id = 'modal-overlay-dynamic';
+            document.body.appendChild(overlay);
+        }
         
-        // APLICAR CSS DIRETO COM !important (porque Tailwind conflita)
-        // Usar textContent de style para evitar problemas de parsing
-        const styleString = `position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100% !important; height: 100% !important; display: flex !important; align-items: center !important; justify-content: center !important; z-index: 9999 !important; background-color: rgba(0, 0, 0, 0.7) !important; padding: 1rem !important;`;
-        modal.style.cssText = styleString;
+        // Transferir conteúdo do modal estático para o overlay dinâmico
+        overlay.innerHTML = modal.innerHTML;
         
-        // Aguardar um frame para garantir que o CSS foi aplicado
-        requestAnimationFrame(() => {
-            console.log('%c🔄 Classes do modal depois:', 'color: purple;', modal.className);
-            console.log('%c📊 Atributo style:', 'color: purple;', modal.getAttribute('style'));
-            console.log('%c📊 getBoundingClientRect depois:', 'color: purple;', modal.getBoundingClientRect());
-            console.log('%c✅ MODAL DEVE ESTAR VISÍVEL AGORA!', 'color: green; font-weight: bold; font-size: 14px;');
-        });
+        // Aplicar estilos ao overlay
+        overlay.style.cssText = `
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100vw !important;
+            height: 100vh !important;
+            display: flex !important;
+            align-items: center !important;
+            justify-content: center !important;
+            z-index: 99999 !important;
+            background-color: rgba(0, 0, 0, 0.7) !important;
+            padding: 1rem !important;
+            overflow: auto !important;
+        `;
+        
+        console.log('%c✅ OVERLAY DINÂMICO CRIADO!', 'color: green; font-weight: bold;');
+        console.log('%c📊 getBoundingClientRect:', 'color: purple;', overlay.getBoundingClientRect());
     } else {
         console.error('%c❌ ERRO CRÍTICO: Modal não encontrado no DOM!', 'color: red; font-weight: bold;');
     }
 };
 
 function closePedidoModal() {
-    const modal = document.getElementById('pedidoModal');
-    // Restaurar classes originais para esconder
-    modal.className = 'fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 p-4';
-    modal.style.cssText = '';
+    const overlay = document.getElementById('modal-overlay-dynamic');
+    if (overlay) {
+        overlay.remove();
+    }
     currentPedidoId = null;
 }
 
