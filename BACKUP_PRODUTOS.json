@@ -1,0 +1,367 @@
+{
+  "backup_data": {
+    "created_at": "2026-01-29",
+    "total_products": 37,
+    "description": "Backup de todos os produtos da Hortifruti Vila Natal com URLs de imagens e descrições",
+    "products": [
+      {
+        "id": "sample_old_1",
+        "name": "🍎 Maçã Fuji",
+        "description": "Maçã fresca e crocante",
+        "price": 5.99,
+        "unit": "kg",
+        "units": ["un", "kg"],
+        "image": "https://images.unsplash.com/photo-1630563451961-ac2ff27616ab?w=300&auto=format&fit=crop&q=60&ixlib=rb-4.0.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8N3x8bWElQzMlQTclQzMlQTNzfGVufDB8fDB8fHww",
+        "color": "#ef4444"
+      },
+      {
+        "id": "sample_maca_verde",
+        "name": "🟢 Maçã Verde",
+        "description": "Maçã verde fresca e refrescante",
+        "price": 5.99,
+        "unit": "kg",
+        "units": ["un", "kg"],
+        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRJw5-aujlZF0wUPdfZclO_mNtzgIJvrAv1_Q&s",
+        "color": "#22c55e"
+      },
+      {
+        "id": "sample_old_3",
+        "name": "🥕 Cenoura Orgânica",
+        "description": "Cenoura fresca e orgânica",
+        "price": 2.99,
+        "unit": "kg",
+        "units": ["un", "kg"],
+        "image": "https://images.unsplash.com/photo-1598170845058-32b9d6a5da37?w=400&h=300&fit=crop",
+        "color": "#f97316"
+      },
+      {
+        "id": "sample_old_4",
+        "name": "🍅 Tomate Italiano",
+        "description": "Tomate vermelho maduro",
+        "price": 4.49,
+        "unit": "kg",
+        "units": ["un", "kg"],
+        "image": "https://images.unsplash.com/photo-1562695530-ca03c4b98623?w=300&auto=format&fit=crop&q=60&ixlib=rb-4.0.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MTR8fHRvbWF0ZXxlbnwwfHwwfHx8MA%3D%3D",
+        "color": "#dc2626"
+      },
+      {
+        "id": "sample_old_5",
+        "name": "🥬 Alface Crespa",
+        "description": "Alface fresca do dia",
+        "price": 2.49,
+        "unit": "un",
+        "image": "https://images.unsplash.com/photo-1622206151226-18ca2c9ab4a1?w=400&h=300&fit=crop",
+        "color": "#10b981"
+      },
+      {
+        "id": "sample_old_6",
+        "name": "🥔 Batata Inglesa",
+        "description": "Batata de primeira qualidade",
+        "price": 3.99,
+        "unit": "kg",
+        "units": ["un", "kg"],
+        "image": "https://images.unsplash.com/photo-1518977676601-b53f82aba655?w=400&h=300&fit=crop",
+        "color": "#92400e"
+      },
+      {
+        "id": "sample_1",
+        "name": "🫑 Pimentão",
+        "description": "Pimentão fresco e vibrante",
+        "price": 1.99,
+        "unit": "un",
+        "image": "https://images.unsplash.com/photo-1622376242797-538aa64a9d38?w=300&auto=format&fit=crop&q=60&ixlib=rb-4.0.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8cGltZW50YW8lMjB2ZXJkZSUyMHVuaWRhZGV8ZW58MHx8MHx8fDA%3D",
+        "color": "#22c55e"
+      },
+      {
+        "id": "sample_2",
+        "name": "🌱 Chuchu",
+        "description": "Chuchu fresco e crocante",
+        "price": 1.99,
+        "unit": "un",
+        "image": "https://plus.unsplash.com/premium_photo-1757716104926-cd2987d01ec3?w=300&auto=format&fit=crop&q=60&ixlib=rb-4.0.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8MXx8Y2h1Y2h1fGVufDB8fDB8fHww",
+        "color": "#84cc16"
+      },
+      {
+        "id": "sample_3",
+        "name": "🌿 Coentro",
+        "description": "Coentro fresco e aromático",
+        "price": 1.99,
+        "unit": "un",
+        "image": "https://images.unsplash.com/photo-1535189487909-a262ad10c165?w=300&auto=format&fit=crop&q=60&ixlib=rb-4.0.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8M3x8Y29lbnRyb3xlbnwwfHwwfHx8MA%3D%3D",
+        "color": "#10b981"
+      },
+      {
+        "id": "sample_4",
+        "name": "🍌 Banana Prata",
+        "description": "Banana madura, doce e cremosa",
+        "price": 5.99,
+        "unit": "palma",
+        "units": ["palma", "kg"],
+        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT6uzihoUPkUVS0wwCnataCcs7SFuzWMNjimA&s",
+        "color": "#f59e0b"
+      },
+      {
+        "id": "sample_5",
+        "name": "🥥 Coco Verde",
+        "description": "Coco verde com água refrescante",
+        "price": 4.99,
+        "unit": "un",
+        "image": "https://redemix.vteximg.com.br/arquivos/ids/205942-1000-1000/628.jpg?v=638350587304530000",
+        "color": "#8b4513"
+      },
+      {
+        "id": "sample_6",
+        "name": "🥥 Coco Ralado",
+        "description": "Coco ralado fresco e saboroso",
+        "price": 5.99,
+        "unit": "kg",
+        "units": ["un", "kg"],
+        "image": "https://cdn.awsli.com.br/600x450/2216/2216236/produto/150441743ce70ea5bcb.jpg",
+        "color": "#a16207"
+      },
+      {
+        "id": "sample_7",
+        "name": "🥥 Água de Coco 1L",
+        "description": "Água de coco natural e saudável",
+        "price": 14.99,
+        "unit": "un",
+        "image": "https://ibassets.com.br/ib.item.image.big/b-cb8e811d89c14a7c900f962c549b7a4b.jpeg",
+        "color": "#f59e0b"
+      },
+      {
+        "id": "sample_8",
+        "name": "🥥 Água de Coco 500mL",
+        "description": "Porção individual de água de coco",
+        "price": 6.99,
+        "unit": "un",
+        "image": "https://www.galaxcommerce.com.br/sistema/upload/4188/produtos/Agua-de-coco-garrafa-500ml_2024-09-23_09-49-46_0_49.png",
+        "color": "#f59e0b"
+      },
+      {
+        "id": "sample_9",
+        "name": "🥔 Batata Doce",
+        "description": "Batata doce nutritiva e saudável",
+        "price": 5.99,
+        "unit": "kg",
+        "image": "https://images.unsplash.com/photo-1730815048561-45df6f7f331d?w=300&auto=format&fit=crop&q=60&ixlib=rb-4.0.1.0&ixid=M3wxMjA3fDB8MHxzZWFyY2h8Mnx8Y2FyJUMzJUExfGVufDB8fDB8fHww",
+        "color": "#dc2626"
+      },
+      {
+        "id": "sample_10",
+        "name": "🥒 Cará",
+        "description": "Cará fresco e nutritivo",
+        "price": 7.99,
+        "unit": "kg",
+        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTex0jLkcT_0PTV3KJC47wBmZGNw9G6RINJxg&s",
+        "color": "#92400e"
+      },
+      {
+        "id": "sample_11",
+        "name": "🌾 Macaxeira com Casca",
+        "description": "Macaxeira fresca com casca",
+        "price": 4.99,
+        "unit": "kg",
+        "image": "https://organicosdafonte.com.br/wp-content/uploads/2022/01/MANDIOCA.jpg",
+        "color": "#92400e"
+      },
+      {
+        "id": "sample_12",
+        "name": "🌾 Macaxeira sem Casca",
+        "description": "Macaxeira descascada e pronta",
+        "price": 5.99,
+        "unit": "kg",
+        "image": "https://adaptive-images.uooucdn.com.br/tr:w-1100,h-1594,c-at_max,pr-true,q-80/a22251-ogxythkyut0/pv/41/c3/28/806c15f424b1f5699f8d1d6c7e.jpg",
+        "color": "#a16207"
+      },
+      {
+        "id": "sample_13",
+        "name": "🍍 Abacaxi Grande",
+        "description": "Abacaxi grande, suculento e doce",
+        "price": 7.99,
+        "unit": "un",
+        "image": "https://cdn.awsli.com.br/300x300/681/681419/produto/265322982/whatsapp-image-2024-10-05-at-09-24-50--2--f22ga3ka20.jpeg",
+        "color": "#f59e0b"
+      },
+      {
+        "id": "sample_14",
+        "name": "🍍 Abacaxi Pequeno",
+        "description": "Abacaxi pequeno, perfeito individual",
+        "price": 4.99,
+        "unit": "un",
+        "image": "https://urbanfarmipiranga.com.br/wp-content/uploads/2022/07/abacaxi-peq.jpg",
+        "color": "#f59e0b"
+      },
+      {
+        "id": "sample_15",
+        "name": "🥑 Abacate",
+        "description": "Abacate cremoso e nutritivo",
+        "price": 11.99,
+        "unit": "kg",
+        "units": ["un", "kg"],
+        "image": "https://phygital-files.mercafacil.com/fazfeira/uploads/produto/abacate_8ce2e371-53de-4657-8223-fb48f4a32cd6.jpg",
+        "color": "#15803d"
+      },
+      {
+        "id": "sample_16",
+        "name": "🍌 Banana Comprida (P)",
+        "description": "Banana comprida tamanho pequeno",
+        "price": 1.99,
+        "unit": "un",
+        "units": ["un", "palma"],
+        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQgrQW5f2NFVK1d9EQhFE7Tmehx9T-Mz0Ye7w&s",
+        "color": "#f59e0b"
+      },
+      {
+        "id": "sample_17",
+        "name": "🍌 Banana Comprida (G)",
+        "description": "Banana comprida tamanho grande",
+        "price": 2.99,
+        "unit": "un",
+        "units": ["un", "palma"],
+        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQgrQW5f2NFVK1d9EQhFE7Tmehx9T-Mz0Ye7w&s",
+        "color": "#f59e0b"
+      },
+      {
+        "id": "sample_kiwi",
+        "name": "🥝 Kiwi",
+        "description": "Kiwi doce e refrescante",
+        "price": 29.90,
+        "unit": "kg",
+        "units": ["un", "kg"],
+        "image": "https://images.unsplash.com/photo-1585238341710-4b4e6416b573?w=300&auto=format&fit=crop&q=60",
+        "color": "#15803d"
+      },
+      {
+        "id": "sample_pera",
+        "name": "🍐 Pera",
+        "description": "Pera fresca e suculenta",
+        "price": 20.99,
+        "unit": "kg",
+        "units": ["un", "kg"],
+        "image": "https://images.tcdn.com.br/img/img_prod/450860/muda_de_pera_d_agua_ou_europeia_1m_enxertada_676_1_20190611093602.jpg",
+        "color": "#a16207"
+      },
+      {
+        "id": "sample_ameixa",
+        "name": "🫐 Ameixa Fresca",
+        "description": "Ameixa doce e saudável",
+        "price": 24.99,
+        "unit": "kg",
+        "units": ["un", "kg"],
+        "image": "https://images.unsplash.com/photo-1568702846914-96b305d2aaeb?w=300&auto=format&fit=crop&q=60",
+        "color": "#7c2d12"
+      },
+      {
+        "id": "sample_uva_verde_sem",
+        "name": "🍇 Uva Verde s/ Sementes 400G",
+        "description": "Uva verde sem sementes - Bandeja 400G",
+        "price": 11.99,
+        "unit": "bandeja",
+        "image": "https://naturalterra.vtexassets.com/arquivos/ids/172549/Uva-Verde-sem-Semente-Natural-Da-Terra-500g.jpg?v=638814438116570000",
+        "color": "#84cc16"
+      },
+      {
+        "id": "sample_uva_verde_com",
+        "name": "🍇 Uva Verde c/ Sementes 400G",
+        "description": "Uva verde com sementes - Bandeja 400G",
+        "price": 4.99,
+        "unit": "bandeja",
+        "image": "https://img.irroba.com.br/fit-in/600x600/filters:fill(transparent):quality(80)/shoeboxs/catalog/80039.png",
+        "color": "#84cc16"
+      },
+      {
+        "id": "sample_uva_roxa_sem",
+        "name": "🍇 Uva Roxa s/ Sementes 400G",
+        "description": "Uva roxa sem sementes - Bandeja 400G",
+        "price": 8.99,
+        "unit": "bandeja",
+        "image": "https://www.galaxcommerce.com.br/sistema/upload/4188/produtos/uva-sem-semente-vitoria-bandeja_2024-07-04_11-58-47_0_355.jpeg",
+        "color": "#7c3aed"
+      },
+      {
+        "id": "sample_uva_roxa_com",
+        "name": "🍇 Uva Roxa c/ Sementes 400G",
+        "description": "Uva roxa com sementes - Bandeja 400G",
+        "price": 5.99,
+        "unit": "bandeja",
+        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQY_WEtpOWSxJvEq8-uLQpmQ5bOBDprjTgigA&s",
+        "color": "#7c3aed"
+      },
+      {
+        "id": "sample_jambo",
+        "name": "🍎 Jambo",
+        "description": "Jambo fresco - Bandeja com 5 unidades",
+        "price": 6.49,
+        "unit": "bandeja",
+        "image": "https://redemix.vteximg.com.br/arquivos/ids/205997-1000-1000/1275.jpg?v=638350587561600000",
+        "color": "#dc2626"
+      },
+      {
+        "id": "sample_goiaba",
+        "name": "🍈 Goiaba",
+        "description": "Goiaba fresca - Bandeja com 4 unidades",
+        "price": 5.99,
+        "unit": "bandeja",
+        "image": "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQT-ITAX0eRHjSr6ZNVE_-4uZ_Y6OHncL60vw&s",
+        "color": "#22c55e"
+      },
+      {
+        "id": "sample_acerola",
+        "name": "🍒 Acerola 500G",
+        "description": "Acerola fresca - Bandeja 500G",
+        "price": 5.99,
+        "unit": "bandeja",
+        "image": "https://mambodelivery.vtexassets.com/arquivos/ids/155583/acerola-bandeja-400g.jpg?v=637883038843300000",
+        "color": "#dc2626"
+      },
+      {
+        "id": "sample_melao",
+        "name": "🍈 Melão",
+        "description": "Melão doce e refrescante",
+        "price": 6.49,
+        "unit": "kg",
+        "units": ["un", "kg"],
+        "image": "https://www.proativaalimentos.com.br/image/cache/catalog/img_prod/melaoamarelo1_502698640_jpg_1024x1024[1]-300x300.jpg",
+        "color": "#f59e0b"
+      },
+      {
+        "id": "sample_laranja_pera",
+        "name": "🍊 Laranja Pera",
+        "description": "Laranja pera fresca e suculenta",
+        "price": 0.65,
+        "unit": "un",
+        "image": "https://www.proativaalimentos.com.br/image/cache/catalog/img_prod/Laranja-Pera[1]-1000x1000.jpg",
+        "color": "#f97316"
+      },
+      {
+        "id": "sample_limao",
+        "name": "🍋 Limão",
+        "description": "Limão - 7 unidades por R$ 2,00",
+        "price": 2.00,
+        "unit": "un",
+        "image": "https://www.okumacitrus.com.br/storage/conteudo/normal/137913520062877eae37f8a.jpg",
+        "color": "#facc15"
+      },
+      {
+        "id": "sample_mamao_formosa",
+        "name": "🧡 Mamão Formosa",
+        "description": "Mamão formosa doce e saudável",
+        "price": 5.99,
+        "unit": "kg",
+        "units": ["un", "kg"],
+        "image": "https://media-agro.estadao.com.br/uploads/2022/02/1131.png",
+        "color": "#f97316"
+      },
+      {
+        "id": "sample_mamao_hawaii",
+        "name": "🧡 Mamão Havaí",
+        "description": "Mamão havaí doce e cremoso",
+        "price": 8.29,
+        "unit": "kg",
+        "units": ["un", "kg"],
+        "image": "https://bretas.vtexassets.com/arquivos/ids/183597/6571bed0558925a4e8897e07.jpg?v=638375500373100000",
+        "color": "#f97316"
+      }
+    ]
+  }
+}
