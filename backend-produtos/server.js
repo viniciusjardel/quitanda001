@@ -261,16 +261,17 @@ app.post('/pedidos', async (req, res) => {
   try {
     const { customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, payment_status, payment_id, items, total } = req.body;
     
-    if (!customer_name || !customer_phone || !address || !items || !total) {
-      return res.status(400).json({ error: 'Dados obrigatórios faltando' });
+    if (!customer_name || !customer_phone || !items || !total) {
+      return res.status(400).json({ error: 'Dados obrigatórios faltando: customer_name, customer_phone, items, total' });
     }
 
     const id = 'ped_' + Date.now();
+    const finalAddress = address || 'Retirada no local'; // Se vazio, usa padrão
     
     await pool.query(
       `INSERT INTO pedidos (id, customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, payment_status, payment_id, items, total, status)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-      [id, customer_name, customer_phone, address, bloco || '', apto || '', delivery_type, payment_method, payment_status || 'pendente', payment_id || null, JSON.stringify(items), total, 'pendente']
+      [id, customer_name, customer_phone, finalAddress, bloco || '', apto || '', delivery_type, payment_method, payment_status || 'pendente', payment_id || null, JSON.stringify(items), total, 'pendente']
     );
     
     console.log('✅ Pedido criado:', id);

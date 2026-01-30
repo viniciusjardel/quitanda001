@@ -40,7 +40,6 @@
 3. Adicione: `DATABASE_URL` = (Cole a URL do PostgreSQL)
 4. Clique **"Save Changes"**
 5. ⏳ Aguarde deploy automático (2-3 min)
-
 ### 3. Verificar Se Funcionou
 ```bash
 curl https://quitanda-produtos-api.onrender.com/produtos
