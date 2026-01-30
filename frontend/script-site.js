@@ -972,7 +972,7 @@ async function processPaymentOnDelivery() {
   const orderData = {
     customer_name: deliveryInfo.name,
     customer_phone: deliveryInfo.phone,
-    address: deliveryInfo.address,
+    address: deliveryInfo.address || 'Retirada no local',
     bloco: deliveryInfo.bloco,
     apto: deliveryInfo.apto,
     delivery_type: deliveryType,
