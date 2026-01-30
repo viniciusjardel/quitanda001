@@ -153,21 +153,42 @@ app.post('/produtos', async (req, res) => {
     // Validar campos obrigatórios
     if (!id || !name || price === undefined || !unit) {
       return res.status(400).json({ 
-        error: 'Campos obrigatórios: id, name, price, unit' 
+        error: 'Campos obrigatórios: id, name, price, unit',
+        received: { id: !!id, name: !!name, price: price !== undefined, unit: !!unit }
       });
     }
 
+    // Validar e converter preço
+    const priceNum = parseFloat(price);
+    if (isNaN(priceNum) || priceNum < 0) {
+      return res.status(400).json({ error: 'Preço inválido ou negativo' });
+    }
+
     // Converter array units para JSON string
-    const unitsJson = units ? JSON.stringify(units) : null;
+    let unitsJson = null;
+    if (units) {
+      if (Array.isArray(units)) {
+        unitsJson = JSON.stringify(units);
+      } else if (typeof units === 'string') {
+        try {
+          JSON.parse(units);
+          unitsJson = units;
+        } catch (e) {
+          unitsJson = JSON.stringify([units]);
+        }
+      }
+    }
+
+    console.log('📝 Criando produto:', { id, name, price: priceNum, unit, units });
 
     await pool.query(
       `INSERT INTO produtos (id, name, price, image, category, unit, units, color, description)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [id, name, price, image || null, category || null, unit, unitsJson, color || null, description || null]
+      [id, name, priceNum, image || null, category || null, unit, unitsJson, color || null, description || null]
     );
     
     console.log(`✅ Produto criado: ${name} (${id})`);
-    console.log(`   Unidades: ${units ? units.join(', ') : unit}`);
+    console.log(`   Unidades: ${units ? (Array.isArray(units) ? units.join(', ') : units) : unit}`);
     res.status(201).json({ 
       message: 'Produto criado com sucesso',
       id: id
@@ -177,7 +198,8 @@ app.post('/produtos', async (req, res) => {
       return res.status(400).json({ error: 'Produto com este ID já existe' });
     }
     console.error('❌ Erro ao criar produto:', error);
-    res.status(500).json({ error: 'Erro ao criar produto' });
+    console.error('   Stack:', error.stack);
+    res.status(500).json({ error: 'Erro ao criar produto', details: error.message });
   }
 });
 
@@ -189,6 +211,15 @@ app.put('/produtos/:id', async (req, res) => {
     const { id } = req.params;
     const { name, price, image, category, unit, units, color, description } = req.body;
 
+    console.log('🔍 PUT /produtos/:id recebido:', {
+      id,
+      name,
+      price: typeof price,
+      unit,
+      units,
+      hasImage: !!image
+    });
+
     // Verificar se produto existe
     const verificar = await pool.query('SELECT id FROM produtos WHERE id = $1', [id]);
     if (verificar.rows.length === 0) {
@@ -196,24 +227,44 @@ app.put('/produtos/:id', async (req, res) => {
     }
 
     // Converter array units para JSON string
-    const unitsJson = units ? JSON.stringify(units) : null;
+    let unitsJson = null;
+    if (units) {
+      if (Array.isArray(units)) {
+        unitsJson = JSON.stringify(units);
+      } else if (typeof units === 'string') {
+        // Se já é string JSON, validar
+        try {
+          JSON.parse(units);
+          unitsJson = units;
+        } catch (e) {
+          unitsJson = JSON.stringify([units]);
+        }
+      }
+    }
+
+    // Validar preço
+    const priceNum = parseFloat(price);
+    if (isNaN(priceNum)) {
+      return res.status(400).json({ error: 'Preço inválido' });
+    }
 
     await pool.query(
       `UPDATE produtos 
        SET name = $1, price = $2, image = $3, category = $4, unit = $5, units = $6, color = $7, description = $8, updated_at = CURRENT_TIMESTAMP
        WHERE id = $9`,
-      [name || null, price || null, image || null, category || null, unit || null, unitsJson, color || null, description || null, id]
+      [name || null, priceNum, image || null, category || null, unit || null, unitsJson, color || null, description || null, id]
     );
     
     console.log(`✅ Produto atualizado: ${id}`);
-    console.log(`   Unidades: ${units ? units.join(', ') : 'não especificadas'}`);
+    console.log(`   Unidades: ${units ? (Array.isArray(units) ? units.join(', ') : units) : 'não especificadas'}`);
     res.json({ 
       message: 'Produto atualizado com sucesso',
       id: id
     });
   } catch (error) {
     console.error('❌ Erro ao atualizar produto:', error);
-    res.status(500).json({ error: 'Erro ao atualizar produto' });
+    console.error('   Stack:', error.stack);
+    res.status(500).json({ error: 'Erro ao atualizar produto', details: error.message });
   }
 });
 

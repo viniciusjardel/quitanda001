@@ -368,7 +368,7 @@ async function saveProduct(e) {
         id: editingProductId || 'prod_' + Date.now(),
         name: productName,
         description: document.getElementById('productDescription').value,
-        price: productPrice,
+        price: parseFloat(productPrice), // Garantir que é número
         unit: selectedUnits[0], // Manter compatibilidade com sistemas antigos
         units: selectedUnits,   // Nova estrutura com múltiplas unidades
         image: finalImage,
@@ -376,6 +376,16 @@ async function saveProduct(e) {
     };
     
     console.log('%c💾 Dados sendo salvos:', 'color: green; font-weight: bold;', productData);
+    
+    // Validação adicional
+    if (!productData.name || productData.name.trim() === '') {
+        alert('⚠️ Por favor, preencha o nome do produto');
+        return;
+    }
+    if (isNaN(productData.price) || productData.price <= 0) {
+        alert('⚠️ Preço inválido. Por favor, verifique o valor');
+        return;
+    }
     
     try {
         let url = `${API_URL}/produtos`;
@@ -393,10 +403,13 @@ async function saveProduct(e) {
         });
         
         if (!response.ok) {
-            throw new Error(`Erro ${response.status} ao salvar`);
+            const errorData = await response.json().catch(() => ({ error: 'Erro desconhecido' }));
+            const errorMsg = errorData.details || errorData.error || `Erro ${response.status}`;
+            throw new Error(`Erro ${response.status}: ${errorMsg}`);
         }
         
-        console.log(`✅ Produto ${editingProductId ? 'atualizado' : 'criado'} com sucesso`);
+        const responseData = await response.json();
+        console.log(`✅ Produto ${editingProductId ? 'atualizado' : 'criado'} com sucesso:`, responseData);
         
         // Recarregar produtos
         await loadData();
@@ -412,7 +425,8 @@ async function saveProduct(e) {
         alert('✅ Produto salvo com sucesso!');
     } catch (error) {
         console.error('❌ Erro ao salvar:', error);
-        alert(`❌ Erro ao salvar: ${error.message}`);
+        console.error('📝 Dados que foram enviados:', productData);
+        alert(`❌ Erro ao salvar:\n\n${error.message}\n\nVerifique o console para mais detalhes.`);
     }
 }
 
