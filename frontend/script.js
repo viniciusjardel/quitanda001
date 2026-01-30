@@ -654,6 +654,8 @@ document.addEventListener('DOMContentLoaded', () => {
 // TROCAR ABAS
 // =======================
 window.showTab = function(tab) {
+    console.log('%c📑 CLICOU NA ABA:', 'color: blue; font-weight: bold;', tab);
+    
     // Esconder todas as abas
     document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -662,12 +664,25 @@ window.showTab = function(tab) {
     });
 
     // Mostrar aba selecionada
-    document.getElementById(`content-${tab}`).classList.remove('hidden');
-    document.getElementById(`tab-${tab}`).classList.remove('border-gray-200', 'text-gray-600');
-    document.getElementById(`tab-${tab}`).classList.add('border-purple-600', 'text-purple-600');
+    const contentEl = document.getElementById(`content-${tab}`);
+    const btnEl = document.getElementById(`tab-${tab}`);
+    
+    if (!contentEl) {
+        console.error(`%c❌ Elemento content-${tab} não encontrado!`, 'color: red; font-weight: bold;');
+        return;
+    }
+    
+    contentEl.classList.remove('hidden');
+    console.log(`%c✅ Aba content-${tab} ficou visível`, 'color: green; font-weight: bold;');
+    
+    if (btnEl) {
+        btnEl.classList.remove('border-gray-200', 'text-gray-600');
+        btnEl.classList.add('border-purple-600', 'text-purple-600');
+    }
 
     // Carregar pedidos se necessário
     if (tab === 'pedidos') {
+        console.log('%c📋 Carregando pedidos...', 'color: purple; font-weight: bold;');
         loadPedidos();
     }
 };
