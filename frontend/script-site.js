@@ -469,6 +469,18 @@ window.closePixModal = () => {
   document.getElementById('pixModal').classList.add('hidden');
 };
 
+window.cancelarCompra = () => {
+  if (confirm('❓ Tem certeza que deseja cancelar a compra?\n\nO carrinho será mantido para você continuar depois.')) {
+    // Fechar modal PIX
+    window.closePixModal();
+    // Fechar modal de delivery
+    window.closeDeliveryModal();
+    // Mostrar mensagem
+    alert('✅ Compra cancelada! Seu carrinho foi mantido.');
+    console.log('❌ Compra cancelada pelo cliente');
+  }
+};
+
 // 🔁 Persistência ao carregar página (IGUAL PROJETO TESTE)
 window.addEventListener('DOMContentLoaded', async () => {
   const paymentId = localStorage.getItem('paymentId');
