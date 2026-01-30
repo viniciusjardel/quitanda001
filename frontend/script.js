@@ -413,6 +413,30 @@ async function loadPedidos() {
 }
 
 // =======================
+// AUTO-REFRESH PEDIDOS A CADA 5 SEGUNDOS
+// =======================
+function setupAutoRefreshPedidos() {
+    console.log('%c📡 Configurando auto-refresh de pedidos...', 'color: blue; font-weight: bold;');
+    
+    setInterval(async () => {
+        try {
+            const response = await fetch(`${API_URL}/pedidos`);
+            if (response.ok) {
+                const novosPedidos = await response.json();
+                
+                // Verificar se há mudanças
+                if (JSON.stringify(novosPedidos) !== JSON.stringify(allPedidos)) {
+                    console.log('%c🔄 Novos pedidos detectados!', 'color: purple;');
+                    await loadPedidos(); // Recarregar e renderizar
+                }
+            }
+        } catch (error) {
+            console.error('Erro no auto-refresh de pedidos:', error);
+        }
+    }, 5000); // A cada 5 segundos
+}
+
+// =======================
 // 📊 RENDERIZAR PEDIDOS
 // =======================
 function renderPedidos(pedidos) {
@@ -669,5 +693,8 @@ if (tabFromUrl === 'pedidos') {
         window.showTab('pedidos');
     }, 500);
 }
+
+// ✨ Iniciar auto-refresh de pedidos
+setupAutoRefreshPedidos();
 
 console.log('%c✨ PAINEL PRONTO!', 'color: green; font-weight: bold; font-size: 14px;');
