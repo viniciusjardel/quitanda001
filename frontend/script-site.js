@@ -91,22 +91,14 @@ async function salvarPedidoNoBackend(pedido) {
     const data = await response.json();
     console.log('%c✅ Pedido salvo no backend:', 'color: green; font-weight: bold;', data);
     
-    // Também salvar em localStorage como backup
-    const orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
-    orders.push(pedido);
-    localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
-    
     // Disparar evento de sincronização
     window.dispatchEvent(new CustomEvent('pedidoAdicionado', { detail: pedido }));
     
     return data;
   } catch (error) {
-    console.error('%c❌ Erro ao salvar pedido no backend:', 'color: red; font-weight: bold;', error);
-    // Fallback: salvar apenas em localStorage
-    const orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
-    orders.push(pedido);
-    localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
-    window.dispatchEvent(new CustomEvent('pedidoAdicionado', { detail: pedido }));
+    console.error('%c❌ ERRO CRÍTICO ao salvar pedido no backend:', 'color: red; font-weight: bold;', error);
+    alert('❌ ERRO: Não foi possível salvar o pedido no banco de dados. Verifique sua conexão com a internet.');
+    throw error; // Re-throw para não continuar o fluxo
   }
 }
 
@@ -997,13 +989,14 @@ async function processPaymentOnDelivery() {
       body: JSON.stringify(orderData)
     });
     
-    if (response.ok) {
-      console.log('✅ Pedido enviado para o banco de dados');
-    } else {
-      console.warn('⚠️ Erro ao enviar pedido para banco, usando fallback');
+    if (!response.ok) {
+      throw new Error(`Erro ${response.status} ao enviar pedido para banco`);
     }
+    
+    console.log('✅ Pedido enviado para o banco de dados (primeira tentativa)');
   } catch (error) {
-    console.error('❌ Erro ao enviar pedido:', error);
+    console.error('❌ Erro ao enviar pedido (primeira tentativa):', error);
+    // Continua mesmo com erro, será retentado no salvarPedidoNoBackend
   }
 
   // Salvar pedido no localStorage com status de pagamento

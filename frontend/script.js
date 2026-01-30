@@ -366,7 +366,6 @@ async function loadPedidos() {
     console.log('%c📋 CARREGANDO PEDIDOS DO BACKEND...', 'color: blue; font-weight: bold;');
     
     try {
-        // Tentar carregar do backend primeiro
         const response = await fetch(`${API_URL}/pedidos`);
         
         if (!response.ok) {
@@ -397,28 +396,9 @@ async function loadPedidos() {
         }));
         
     } catch (error) {
-        console.warn('%c⚠️ Erro ao carregar do backend, tentando localStorage...', 'color: orange;', error);
-        
-        // Fallback para localStorage
-        const localOrders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
-        allPedidos = localOrders.map(order => ({
-            id: order.id,
-            customer_name: order.customer_name || 'N/A',
-            customer_phone: order.customer_phone || 'N/A',
-            address: order.address || 'Retirada no local',
-            bloco: order.bloco || '',
-            apto: order.apto || '',
-            delivery_type: order.delivery_type || 'local',
-            payment_method: order.payment_method || 'N/A',
-            payment_status: order.payment_status || 'pendente',
-            payment_id: order.payment_id,
-            items: order.items || [],
-            total: order.total || 0,
-            status: 'pendente',
-            notes: '',
-            created_at: order.timestamp || new Date().toLocaleString('pt-BR'),
-            updated_at: order.timestamp || new Date().toLocaleString('pt-BR')
-        }));
+        console.error('%c❌ ERRO CRÍTICO ao carregar pedidos do backend:', 'color: red; font-weight: bold;', error);
+        alert('❌ ERRO: Não foi possível carregar os pedidos do banco de dados. Verifique sua conexão com a internet.');
+        allPedidos = [];
     }
     
     // Ordenar por data (mais recentes primeiro)
