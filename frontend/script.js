@@ -499,7 +499,7 @@ function renderPedidos(pedidos) {
     console.log('%c✅ HTML dos pedidos renderizado na tela!', 'color: green; font-weight: bold;');
 }
 
-function abrirPedidoModal(id) {
+window.abrirPedidoModal = function(id) {
     console.log('%c🔍 Abrindo modal para ID:', 'color: blue;', id, 'Tipo:', typeof id);
     currentPedidoId = id;
     
@@ -585,14 +585,16 @@ function abrirPedidoModal(id) {
     document.getElementById('pedidoNotes').value = pedido.notes || '';
     
     document.getElementById('pedidoModal').classList.remove('hidden');
-}
+};
 
 function closePedidoModal() {
     document.getElementById('pedidoModal').classList.add('hidden');
     currentPedidoId = null;
 }
 
-async function salvarPedidoChanges() {
+window.closePedidoModal = closePedidoModal;
+
+window.salvarPedidoChanges = async function() {
     if (!currentPedidoId) return;
 
     const pedido = allPedidos.find(p => p.id === currentPedidoId);
@@ -601,26 +603,45 @@ async function salvarPedidoChanges() {
     const status = document.getElementById('pedidoStatus').value;
     const notes = document.getElementById('pedidoNotes').value;
 
-    // Atualizar no localStorage
-    let orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
-    const orderIndex = orders.findIndex(o => o.id === currentPedidoId);
-    if (orderIndex >= 0) {
-        orders[orderIndex].status = status;
-        orders[orderIndex].notes = notes;
-        localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
-        console.log('✅ Pedido atualizado no localStorage');
-    }
+    // Atualizar no backend
+    try {
+        const response = await fetch(`${API_URL}/pedidos/${currentPedidoId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: status, notes: notes })
+        });
 
-    closePedidoModal();
-    loadPedidos();
-}
+        if (!response.ok) {
+            throw new Error('Erro ao atualizar no backend');
+        }
+
+        console.log('✅ Pedido atualizado no backend');
+
+        // Atualizar em localStorage
+        let orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
+        const orderIndex = orders.findIndex(o => o.id === currentPedidoId);
+        if (orderIndex >= 0) {
+            orders[orderIndex].status = status;
+            orders[orderIndex].notes = notes;
+            localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
+            console.log('✅ Pedido atualizado no localStorage');
+        }
+
+        alert('✅ Alterações salvas com sucesso!');
+        closePedidoModal();
+        loadPedidos();
+    } catch (error) {
+        console.error('❌ Erro ao salvar:', error);
+        alert('❌ Erro ao salvar alterações. Tente novamente.');
+    }
+};
 
 // Variáveis globais para confirmação
 let statusPagamentoEmAlterar = null;
 let textoStatusPagamento = '';
 
 // Preparar confirmação para mudar status de pagamento
-function preparaConfirmacaoPagamento(novoStatus, descricao) {
+window.preparaConfirmacaoPagamento = function(novoStatus, descricao) {
     statusPagamentoEmAlterar = novoStatus;
     textoStatusPagamento = descricao;
     
@@ -636,10 +657,10 @@ function preparaConfirmacaoPagamento(novoStatus, descricao) {
     `;
     
     document.getElementById('confirmacaoPagamentoModal').classList.remove('hidden');
-}
+};
 
 // Confirmar e executar mudança de status
-function confirmarMudancaStatusPagamento() {
+window.confirmarMudancaStatusPagamento = function() {
     if (!statusPagamentoEmAlterar || !currentPedidoId) {
         alert('❌ Erro ao processar a confirmação');
         return;
@@ -680,14 +701,14 @@ function confirmarMudancaStatusPagamento() {
         console.error('%c❌ Erro ao alterar status:', 'color: red;', error);
         alert('❌ Erro ao salvar no banco de dados. Tente novamente.');
     });
-}
+};
 
 // Cancelar confirmação
-function cancelarConfirmacao() {
+window.cancelarConfirmacao = function() {
     statusPagamentoEmAlterar = null;
     textoStatusPagamento = '';
     document.getElementById('confirmacaoPagamentoModal').classList.add('hidden');
-}
+};
 
 // Buscar pedidos
 document.addEventListener('DOMContentLoaded', () => {
