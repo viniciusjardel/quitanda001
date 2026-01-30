@@ -516,6 +516,13 @@ function processPaymentOnDelivery() {
     (deliveryType === 'delivery' ? 3 : 0);
 
   const orderData = {
+    customer_name: deliveryInfo.name,
+    customer_phone: deliveryInfo.phone,
+    address: deliveryInfo.address,
+    bloco: deliveryInfo.bloco,
+    apto: deliveryInfo.apto,
+    delivery_type: deliveryType,
+    payment_method: deliveryInfo.paymentMethod,
     items: cart.map(i => ({
       id: i.id,
       name: i.name,
@@ -523,13 +530,27 @@ function processPaymentOnDelivery() {
       price: i.price,
       unit: i.unit
     })),
-    deliveryInfo,
-    total,
-    paymentMethod: deliveryInfo.paymentMethod,
-    timestamp: new Date().toISOString()
+    total
   };
 
-  // Salvar pedido no localStorage para rastreamento
+  // Enviar para API (backend)
+  try {
+    const response = await fetch(`${PRODUCTS_API_URL}/pedidos`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(orderData)
+    });
+    
+    if (response.ok) {
+      console.log('✅ Pedido enviado para o banco de dados');
+    } else {
+      console.warn('⚠️ Erro ao enviar pedido para banco, usando fallback');
+    }
+  } catch (error) {
+    console.error('❌ Erro ao enviar pedido:', error);
+  }
+
+  // Salvar pedido no localStorage como fallback
   const orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
   orders.push(orderData);
   localStorage.setItem('hortifruti_orders', JSON.stringify(orders));

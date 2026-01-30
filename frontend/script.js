@@ -350,6 +350,172 @@ function showTab(tabName) {
 }
 
 // =======================
+// GERENCIAR PEDIDOS
+// =======================
+let allPedidos = [];
+let currentPedidoId = null;
+
+async function loadPedidos() {
+    try {
+        const response = await fetch(`${API_URL}/pedidos`);
+        if (!response.ok) throw new Error('Erro ao buscar pedidos');
+        allPedidos = await response.json();
+        renderPedidos(allPedidos);
+    } catch (error) {
+        console.error('❌ Erro ao carregar pedidos:', error);
+        document.getElementById('pedidosList').innerHTML = '<p class="text-center text-red-500">Erro ao carregar pedidos</p>';
+    }
+}
+
+function renderPedidos(pedidos) {
+    const list = document.getElementById('pedidosList');
+    
+    if (pedidos.length === 0) {
+        list.innerHTML = '<p class="text-center text-gray-500 py-8">Nenhum pedido encontrado</p>';
+        return;
+    }
+
+    const statusEmojis = {
+        'pendente': '🔴',
+        'confirmado': '🟡',
+        'preparando': '🟠',
+        'pronto': '🟢',
+        'entregue': '✅',
+        'cancelado': '❌'
+    };
+
+    list.innerHTML = pedidos.map(p => `
+        <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-purple-400 transition cursor-pointer" onclick="abrirPedidoModal('${p.id}')">
+            <div class="flex justify-between items-start mb-3">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-800">${p.customer_name}</h3>
+                    <p class="text-sm text-gray-500">📱 ${p.customer_phone}</p>
+                </div>
+                <span class="text-xl">${statusEmojis[p.status] || '❓'} ${p.status.toUpperCase()}</span>
+            </div>
+            
+            <p class="text-sm text-gray-600 mb-2">📍 ${p.address}${p.bloco ? `, Bloco ${p.bloco}` : ''}${p.apto ? `, Apt ${p.apto}` : ''}</p>
+            <p class="text-sm text-gray-600 mb-2">💳 ${p.payment_method} • ${p.delivery_type === 'delivery' ? '🚗 Entrega' : '🏪 Retirada'}</p>
+            
+            <div class="flex justify-between items-end">
+                <div>
+                    <span class="text-xs text-gray-500">${new Date(p.created_at).toLocaleDateString('pt-BR')} ${new Date(p.created_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
+                </div>
+                <span class="text-xl font-bold text-green-600">R$ ${p.total.toFixed(2).replace('.', ',')}</span>
+            </div>
+        </div>
+    `).join('');
+}
+
+function abrirPedidoModal(id) {
+    currentPedidoId = id;
+    const pedido = allPedidos.find(p => p.id === id);
+    if (!pedido) return;
+
+    const itens = typeof pedido.items === 'string' ? JSON.parse(pedido.items) : pedido.items;
+    
+    const content = `
+        <div class="space-y-2 pb-4 border-b">
+            <h4 class="font-bold text-lg">👤 Cliente</h4>
+            <p><strong>Nome:</strong> ${pedido.customer_name}</p>
+            <p><strong>Telefone:</strong> <a href="tel:${pedido.customer_phone}" class="text-blue-600">${pedido.customer_phone}</a></p>
+        </div>
+
+        <div class="space-y-2 pb-4 border-b">
+            <h4 class="font-bold text-lg">📍 Endereço</h4>
+            <p>${pedido.address}${pedido.bloco ? `, Bloco ${pedido.bloco}` : ''}${pedido.apto ? `, Apt ${pedido.apto}` : ''}</p>
+        </div>
+
+        <div class="space-y-2 pb-4 border-b">
+            <h4 class="font-bold text-lg">🛒 Itens (${itens.length})</h4>
+            ${itens.map(i => `<p>• ${i.name} (${i.quantity}x) - R$ ${(i.price * i.quantity).toFixed(2).replace('.', ',')}</p>`).join('')}
+        </div>
+
+        <div class="space-y-2 pb-4 border-b">
+            <h4 class="font-bold text-lg">💰 Valor Total</h4>
+            <p class="text-2xl font-bold text-green-600">R$ ${pedido.total.toFixed(2).replace('.', ',')}</p>
+        </div>
+
+        <div class="space-y-2 pb-4">
+            <h4 class="font-bold text-lg">📅 Data</h4>
+            <p>${new Date(pedido.created_at).toLocaleDateString('pt-BR')} às ${new Date(pedido.created_at).toLocaleTimeString('pt-BR')}</p>
+            <p class="text-xs text-gray-500">Atualizado: ${new Date(pedido.updated_at).toLocaleDateString('pt-BR')} às ${new Date(pedido.updated_at).toLocaleTimeString('pt-BR')}</p>
+        </div>
+    `;
+
+    document.getElementById('pedidoDetailsContent').innerHTML = content;
+    document.getElementById('pedidoStatus').value = pedido.status;
+    document.getElementById('pedidoNotes').value = pedido.notes || '';
+    document.getElementById('pedidoModal').classList.remove('hidden');
+}
+
+function closePedidoModal() {
+    document.getElementById('pedidoModal').classList.add('hidden');
+    currentPedidoId = null;
+}
+
+async function salvarPedidoChanges() {
+    if (!currentPedidoId) return;
+
+    const status = document.getElementById('pedidoStatus').value;
+    const notes = document.getElementById('pedidoNotes').value;
+
+    try {
+        const response = await fetch(`${API_URL}/pedidos/${currentPedidoId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status, notes })
+        });
+
+        if (response.ok) {
+            console.log('✅ Pedido atualizado com sucesso');
+            closePedidoModal();
+            loadPedidos();
+        }
+    } catch (error) {
+        console.error('❌ Erro ao salvar pedido:', error);
+        alert('Erro ao salvar alterações');
+    }
+}
+
+// Buscar pedidos
+document.addEventListener('DOMContentLoaded', () => {
+    const searchInput = document.getElementById('pedidosSearch');
+    if (searchInput) {
+        searchInput.addEventListener('input', (e) => {
+            const termo = e.target.value.toLowerCase();
+            const filtered = allPedidos.filter(p => 
+                p.customer_name.toLowerCase().includes(termo) || 
+                p.customer_phone.includes(termo)
+            );
+            renderPedidos(filtered);
+        });
+    }
+});
+
+// =======================
+// TROCAR ABAS
+// =======================
+window.showTab = function(tab) {
+    // Esconder todas as abas
+    document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+        btn.classList.remove('border-purple-600', 'text-purple-600');
+        btn.classList.add('border-gray-200', 'text-gray-600');
+    });
+
+    // Mostrar aba selecionada
+    document.getElementById(`content-${tab}`).classList.remove('hidden');
+    document.getElementById(`tab-${tab}`).classList.remove('border-gray-200', 'text-gray-600');
+    document.getElementById(`tab-${tab}`).classList.add('border-purple-600', 'text-purple-600');
+
+    // Carregar pedidos se necessário
+    if (tab === 'pedidos') {
+        loadPedidos();
+    }
+};
+
+// =======================
 // INICIALIZAR
 // =======================
 console.log('%c🔄 INICIALIZANDO PAINEL...', 'color: orange; font-weight: bold;');

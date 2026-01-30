@@ -28,6 +28,23 @@ db.exec(`
     description TEXT,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
     updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  );
+
+  CREATE TABLE IF NOT EXISTS pedidos (
+    id TEXT PRIMARY KEY,
+    customer_name TEXT NOT NULL,
+    customer_phone TEXT NOT NULL,
+    address TEXT NOT NULL,
+    bloco TEXT,
+    apto TEXT,
+    delivery_type TEXT NOT NULL,
+    payment_method TEXT NOT NULL,
+    items TEXT NOT NULL,
+    total REAL NOT NULL,
+    status TEXT DEFAULT 'pendente',
+    notes TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )
 `);
 
@@ -186,6 +203,89 @@ app.delete('/produtos', (req, res) => {
   } catch (error) {
     console.error('❌ Erro ao deletar todos os produtos:', error);
     res.status(500).json({ error: 'Erro ao deletar produtos' });
+  }
+});
+
+// =======================
+// PEDIDOS
+// =======================
+
+// GET todos os pedidos
+app.get('/pedidos', (req, res) => {
+  try {
+    const stmt = db.prepare('SELECT * FROM pedidos ORDER BY created_at DESC');
+    const pedidos = stmt.all();
+    res.json(pedidos.map(p => ({
+      ...p,
+      items: JSON.parse(p.items)
+    })));
+  } catch (error) {
+    console.error('❌ Erro ao buscar pedidos:', error);
+    res.status(500).json({ error: 'Erro ao buscar pedidos' });
+  }
+});
+
+// GET um pedido específico
+app.get('/pedidos/:id', (req, res) => {
+  try {
+    const stmt = db.prepare('SELECT * FROM pedidos WHERE id = ?');
+    const pedido = stmt.get(req.params.id);
+    if (!pedido) return res.status(404).json({ error: 'Pedido não encontrado' });
+    res.json({ ...pedido, items: JSON.parse(pedido.items) });
+  } catch (error) {
+    res.status(500).json({ error: 'Erro ao buscar pedido' });
+  }
+});
+
+// POST novo pedido
+app.post('/pedidos', (req, res) => {
+  try {
+    const { customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, items, total } = req.body;
+    
+    if (!customer_name || !customer_phone || !address || !items || !total) {
+      return res.status(400).json({ error: 'Dados obrigatórios faltando' });
+    }
+
+    const id = 'ped_' + Date.now();
+    const stmt = db.prepare(`
+      INSERT INTO pedidos (id, customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, items, total, status)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    
+    stmt.run(id, customer_name, customer_phone, address, bloco || '', apto || '', delivery_type, payment_method, JSON.stringify(items), total, 'pendente');
+    
+    console.log('✅ Pedido criado:', id);
+    res.status(201).json({ id, message: 'Pedido criado com sucesso' });
+  } catch (error) {
+    console.error('❌ Erro ao criar pedido:', error);
+    res.status(500).json({ error: 'Erro ao criar pedido' });
+  }
+});
+
+// PUT atualizar pedido (status ou notas)
+app.put('/pedidos/:id', (req, res) => {
+  try {
+    const { status, notes } = req.body;
+    const stmt = db.prepare('UPDATE pedidos SET status = ?, notes = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+    stmt.run(status || null, notes || null, req.params.id);
+    console.log('✅ Pedido atualizado:', req.params.id);
+    res.json({ message: 'Pedido atualizado com sucesso' });
+  } catch (error) {
+    console.error('❌ Erro ao atualizar pedido:', error);
+    res.status(500).json({ error: 'Erro ao atualizar pedido' });
+  }
+});
+
+// DELETE pedido
+app.delete('/pedidos/:id', (req, res) => {
+  try {
+    const stmt = db.prepare('DELETE FROM pedidos WHERE id = ?');
+    stmt.run(req.params.id);
+    console.log('✅ Pedido deletado:', req.params.id);
+    res.json({ message: 'Pedido deletado com sucesso' });
+  } catch (error) {
+    console.error('❌ Erro ao deletar pedido:', error);
+    res.status(500).json({ error: 'Erro ao deletar pedido' });
   }
 });
 
