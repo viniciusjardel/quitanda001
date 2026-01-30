@@ -691,12 +691,20 @@ async function generatePix() {
 }
 
 function renderPixQRCode(data) {
+  // Atualizar o input com o código PIX
+  document.getElementById('pixCode').value = data.qr_code;
+  
+  // Mostrar a seção do código PIX
+  document.getElementById('pixCodeSection').classList.remove('hidden');
+  
   document.getElementById('pixContainer').innerHTML = `
-    <img src="data:image/png;base64,${data.qr_code_base64}" class="mx-auto">
-    <p class="text-center text-sm break-all mt-2">${data.qr_code}</p>
-    <p class="text-center font-bold mt-2">⏳ Aguardando pagamento...</p>
+    <div class="text-center">
+      <img src="data:image/png;base64,${data.qr_code_base64}" class="mx-auto mb-4 border-4 border-purple-200 rounded-lg p-2 bg-white">
+      <p class="text-center font-bold text-purple-600">⏳ Aguardando pagamento...</p>
+      <p class="text-center text-xs text-gray-500 mt-2">Escaneie o QR Code ou use o código abaixo</p>
+    </div>
   `;
-}
+};
 
 async function consultarStatusPix(id) {
   try {
@@ -811,6 +819,34 @@ ${deliveryType === 'delivery' ? '🚗 *Entrega: Sim (+R$ 3,00)*' : '🏪 *Retira
 window.closePixModal = () => {
   if (pixInterval) clearInterval(pixInterval);
   document.getElementById('pixModal').classList.add('hidden');
+  document.getElementById('pixCode').value = '';
+  document.getElementById('pixCodeSection').classList.add('hidden');
+  document.getElementById('pixContainer').innerHTML = '';
+};
+
+window.copiarCodigoPix = () => {
+  const codigoInput = document.getElementById('pixCode');
+  if (!codigoInput.value) {
+    alert('❌ Nenhum código PIX disponível');
+    return;
+  }
+  
+  // Copiar para a área de transferência
+  codigoInput.select();
+  document.execCommand('copy');
+  
+  // Feedback visual
+  const botao = event.target;
+  const textoOriginal = botao.textContent;
+  botao.textContent = '✅ Copiado!';
+  botao.classList.add('bg-green-500', 'hover:bg-green-600');
+  botao.classList.remove('bg-purple-500', 'hover:bg-purple-600');
+  
+  setTimeout(() => {
+    botao.textContent = textoOriginal;
+    botao.classList.remove('bg-green-500', 'hover:bg-green-600');
+    botao.classList.add('bg-purple-500', 'hover:bg-purple-600');
+  }, 2000);
 };
 
 window.showCancelModal = () => {
