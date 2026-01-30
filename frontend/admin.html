@@ -8,6 +8,13 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
     <style>
+        /* Garantir que modais funcionam */
+        html, body {
+            width: 100% !important;
+            height: 100% !important;
+            overflow: visible !important;
+        }
+        
         /* Sobrescrever hidden para modais */
         #pedidoModal {
             position: fixed !important;
