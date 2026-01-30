@@ -1,0 +1,65 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Modal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        #testeModal {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            bottom: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            z-index: 9999 !important;
+        }
+        
+        #testeModal.hidden {
+            display: none !important;
+        }
+        
+        #testeModal:not(.hidden) {
+            display: flex !important;
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+    <div class="p-8">
+        <h1 class="text-3xl font-bold mb-4">Teste Modal Simples</h1>
+        <button onclick="abrirModal()" class="bg-blue-500 text-white px-6 py-3 rounded-lg">
+            Abrir Modal
+        </button>
+    </div>
+
+    <!-- Modal de Teste -->
+    <div id="testeModal" class="bg-black bg-opacity-70 hidden flex items-center justify-center p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-8">
+            <h2 class="text-2xl font-bold mb-4">Modal Funcionando! ✅</h2>
+            <p class="text-gray-600 mb-6">Se você vê isso, o modal está funcionando corretamente.</p>
+            <p class="text-gray-600 mb-6">Verifique o console para mais informações.</p>
+            <button onclick="fecharModal()" class="bg-red-500 text-white px-6 py-3 rounded-lg">
+                Fechar
+            </button>
+        </div>
+    </div>
+
+    <script>
+        function abrirModal() {
+            console.log('🔓 Abrindo modal de teste...');
+            const modal = document.getElementById('testeModal');
+            console.log('Modal encontrado:', modal ? '✅' : '❌');
+            modal.classList.remove('hidden');
+            console.log('Classes após remover hidden:', modal.className);
+            console.log('Display computado:', window.getComputedStyle(modal).display);
+        }
+
+        function fecharModal() {
+            console.log('🔒 Fechando modal de teste...');
+            document.getElementById('testeModal').classList.add('hidden');
+        }
+    </script>
+</body>
+</html>

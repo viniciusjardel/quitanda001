@@ -601,6 +601,12 @@ window.abrirPedidoModal = function(id) {
         console.log('%c🔄 Classes do modal antes:', 'color: purple;', modal.className);
         modal.classList.remove('hidden');
         console.log('%c🔄 Classes do modal depois:', 'color: purple;', modal.className);
+        
+        // TESTE: Scroll para garantir que o modal está visível
+        setTimeout(() => {
+            modal.scrollIntoView({behavior: 'smooth', block: 'center'});
+        }, 100);
+        
         console.log('%c✅ MODAL DEVE ESTAR VISÍVEL AGORA!', 'color: green; font-weight: bold; font-size: 14px;');
     } else {
         console.error('%c❌ ERRO CRÍTICO: Modal não encontrado no DOM!', 'color: red; font-weight: bold;');
