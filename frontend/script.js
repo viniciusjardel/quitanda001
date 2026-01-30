@@ -492,6 +492,8 @@ function renderPedidos(pedidos) {
             </div>
         </div>
     `}).join('');
+    
+    console.log('%c✅ HTML dos pedidos renderizado na tela!', 'color: green; font-weight: bold;');
 }
 
 function abrirPedidoModal(id) {
