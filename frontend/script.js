@@ -51,6 +51,12 @@ async function loadData() {
         
         products = await response.json();
         console.log('%c✅ Produtos carregados da API:', 'color: green;', products.length);
+        console.table(products.map(p => ({ 
+            id: p.id, 
+            name: p.name, 
+            unit: p.unit,
+            units: p.units ? p.units.join(', ') : 'N/A'
+        })));
     } catch (error) {
         console.error('%c❌ Erro ao carregar da API:', 'color: red;', error.message);
         alert(`⚠️ Erro ao conectar com a API: ${error.message}\n\nVerifique se o backend está online.`);
@@ -125,6 +131,35 @@ function renderProducts() {
 }
 
 // =======================
+// ATUALIZAR DISPLAY DE UNIDADES
+// =======================
+function updateUnitsDisplay() {
+    const selectedUnits = Array.from(document.querySelectorAll('.product-unit-checkbox:checked'))
+        .map(checkbox => checkbox.value);
+    
+    const infoElement = document.getElementById('unitsSelectedInfo');
+    if (infoElement) {
+        if (selectedUnits.length === 0) {
+            infoElement.textContent = 'Nenhuma unidade selecionada';
+            infoElement.style.color = '#999';
+        } else {
+            infoElement.textContent = `Unidades selecionadas: ${selectedUnits.join(', ')}`;
+            infoElement.style.color = '#10b981';
+            infoElement.style.fontWeight = 'bold';
+        }
+    }
+}
+
+// Adicionar listeners aos checkboxes de unidades quando o modal abre
+document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('change', (e) => {
+        if (e.target.classList.contains('product-unit-checkbox')) {
+            updateUnitsDisplay();
+        }
+    });
+});
+
+// =======================
 // ABRIR MODAL NOVO PRODUTO
 // =======================
 function openProductModal() {
@@ -134,7 +169,7 @@ function openProductModal() {
     
     const requiredElements = [
         'modalTitle', 'productId', 'productName', 'productDescription', 
-        'productPrice', 'productUnit', 'productImage', 'productImageFile',
+        'productPrice', 'productImage', 'productImageFile',
         'productImageData', 'productColor', 'imagePreview', 'productModal'
     ];
     
@@ -156,12 +191,17 @@ function openProductModal() {
     document.getElementById('productName').value = '';
     document.getElementById('productDescription').value = '';
     document.getElementById('productPrice').value = '';
-    document.getElementById('productUnit').value = 'kg';
     document.getElementById('productImage').value = '';
     document.getElementById('productImageFile').value = '';
     document.getElementById('productImageData').value = '';
     document.getElementById('productColor').value = '';
     document.getElementById('imagePreview').classList.add('hidden');
+    
+    // Limpar seleção de unidades
+    document.querySelectorAll('.product-unit-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    updateUnitsDisplay();
     
     document.getElementById('productModal').classList.remove('hidden');
     document.getElementById('productModal').classList.add('flex');
@@ -184,17 +224,40 @@ function editProduct(id) {
         return;
     }
     
+    console.log('%c📦 Dados do produto:', 'color: purple; font-weight: bold;', product);
+    console.log('%c📋 Array de unidades:', 'color: cyan;', product.units);
+    
     editingProductId = id;
     document.getElementById('modalTitle').textContent = 'Editar Produto';
     document.getElementById('productId').value = product.id;
     document.getElementById('productName').value = product.name;
     document.getElementById('productDescription').value = product.description || '';
     document.getElementById('productPrice').value = product.price;
-    document.getElementById('productUnit').value = product.unit;
     document.getElementById('productImage').value = product.image;
     document.getElementById('productImageFile').value = '';
     document.getElementById('productImageData').value = '';
     document.getElementById('productColor').value = product.color || '';
+    
+    // Carregar unidades (verificar se é array ou string antiga)
+    document.querySelectorAll('.product-unit-checkbox').forEach(checkbox => {
+        checkbox.checked = false;
+    });
+    
+    const units = Array.isArray(product.units) ? product.units : [product.unit];
+    console.log('%c✅ Unidades a carregar:', 'color: orange;', units);
+    
+    units.forEach(unit => {
+        const checkbox = document.querySelector(`.product-unit-checkbox[value="${unit}"]`);
+        console.log(`  Procurando: .product-unit-checkbox[value="${unit}"]`, checkbox);
+        if (checkbox) {
+            checkbox.checked = true;
+            console.log(`    ✅ Marcado: ${unit}`);
+        } else {
+            console.log(`    ❌ NÃO ENCONTRADO: ${unit}`);
+        }
+    });
+    
+    updateUnitsDisplay();
     
     document.getElementById('imagePreview').classList.remove('hidden');
     document.getElementById('previewImg').src = product.image;
@@ -290,15 +353,29 @@ async function saveProduct(e) {
         return;
     }
     
+    // Capturar múltiplas unidades
+    const selectedUnits = Array.from(document.querySelectorAll('.product-unit-checkbox:checked'))
+        .map(checkbox => checkbox.value);
+    
+    console.log('%c📋 Unidades selecionadas:', 'color: orange; font-weight: bold;', selectedUnits);
+    
+    if (selectedUnits.length === 0) {
+        alert('⚠️ Por favor, selecione pelo menos uma unidade de medida');
+        return;
+    }
+    
     const productData = {
         id: editingProductId || 'prod_' + Date.now(),
         name: productName,
         description: document.getElementById('productDescription').value,
         price: productPrice,
-        unit: document.getElementById('productUnit').value,
+        unit: selectedUnits[0], // Manter compatibilidade com sistemas antigos
+        units: selectedUnits,   // Nova estrutura com múltiplas unidades
         image: finalImage,
         color: document.getElementById('productColor').value || null
     };
+    
+    console.log('%c💾 Dados sendo salvos:', 'color: green; font-weight: bold;', productData);
     
     try {
         let url = `${API_URL}/produtos`;
@@ -323,6 +400,14 @@ async function saveProduct(e) {
         
         // Recarregar produtos
         await loadData();
+        
+        console.log('%c🔍 VERIFICANDO DADOS APÓS RELOAD:', 'color: cyan; font-weight: bold;');
+        const reloadedProduct = products.find(p => p.id === editingProductId);
+        console.log('%c📦 Produto recarregado:', 'color: cyan;', reloadedProduct);
+        if (reloadedProduct) {
+            console.log('%c📋 Unidades no produto recarregado:', 'color: cyan;', reloadedProduct.units);
+        }
+        
         closeProductModal();
         alert('✅ Produto salvo com sucesso!');
     } catch (error) {

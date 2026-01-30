@@ -33,6 +33,7 @@ async function initializeTables() {
         image TEXT,
         category TEXT,
         unit TEXT NOT NULL,
+        units TEXT,
         color TEXT,
         description TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -84,10 +85,22 @@ app.get('/', (req, res) => {
 app.get('/produtos', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM produtos ORDER BY created_at DESC');
-    const produtos = result.rows.map(p => ({
-      ...p,
-      price: parseFloat(p.price)
-    }));
+    const produtos = result.rows.map(p => {
+      let units = null;
+      if (p.units) {
+        try {
+          units = JSON.parse(p.units);
+        } catch (e) {
+          console.warn(`⚠️ Erro ao parsear units do produto ${p.id}:`, e.message);
+          units = null;
+        }
+      }
+      return {
+        ...p,
+        price: parseFloat(p.price),
+        units: units
+      };
+    });
     console.log(`📦 GET /produtos: ${produtos.length} produtos`);
     res.json(produtos);
   } catch (error) {
@@ -109,9 +122,20 @@ app.get('/produtos/:id', async (req, res) => {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
     
+    let units = null;
+    if (produto.units) {
+      try {
+        units = JSON.parse(produto.units);
+      } catch (e) {
+        console.warn(`⚠️ Erro ao parsear units do produto ${id}:`, e.message);
+        units = null;
+      }
+    }
+    
     res.json({
       ...produto,
-      price: parseFloat(produto.price)
+      price: parseFloat(produto.price),
+      units: units
     });
   } catch (error) {
     console.error('❌ Erro ao buscar produto:', error);
@@ -124,7 +148,7 @@ app.get('/produtos/:id', async (req, res) => {
 // =======================
 app.post('/produtos', async (req, res) => {
   try {
-    const { id, name, price, image, category, unit, color, description } = req.body;
+    const { id, name, price, image, category, unit, units, color, description } = req.body;
 
     // Validar campos obrigatórios
     if (!id || !name || price === undefined || !unit) {
@@ -133,13 +157,17 @@ app.post('/produtos', async (req, res) => {
       });
     }
 
+    // Converter array units para JSON string
+    const unitsJson = units ? JSON.stringify(units) : null;
+
     await pool.query(
-      `INSERT INTO produtos (id, name, price, image, category, unit, color, description)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
-      [id, name, price, image || null, category || null, unit, color || null, description || null]
+      `INSERT INTO produtos (id, name, price, image, category, unit, units, color, description)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
+      [id, name, price, image || null, category || null, unit, unitsJson, color || null, description || null]
     );
     
     console.log(`✅ Produto criado: ${name} (${id})`);
+    console.log(`   Unidades: ${units ? units.join(', ') : unit}`);
     res.status(201).json({ 
       message: 'Produto criado com sucesso',
       id: id
@@ -159,7 +187,7 @@ app.post('/produtos', async (req, res) => {
 app.put('/produtos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, image, category, unit, color, description } = req.body;
+    const { name, price, image, category, unit, units, color, description } = req.body;
 
     // Verificar se produto existe
     const verificar = await pool.query('SELECT id FROM produtos WHERE id = $1', [id]);
@@ -167,14 +195,18 @@ app.put('/produtos/:id', async (req, res) => {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
 
+    // Converter array units para JSON string
+    const unitsJson = units ? JSON.stringify(units) : null;
+
     await pool.query(
       `UPDATE produtos 
-       SET name = $1, price = $2, image = $3, category = $4, unit = $5, color = $6, description = $7, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $8`,
-      [name || null, price || null, image || null, category || null, unit || null, color || null, description || null, id]
+       SET name = $1, price = $2, image = $3, category = $4, unit = $5, units = $6, color = $7, description = $8, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $9`,
+      [name || null, price || null, image || null, category || null, unit || null, unitsJson, color || null, description || null, id]
     );
     
     console.log(`✅ Produto atualizado: ${id}`);
+    console.log(`   Unidades: ${units ? units.join(', ') : 'não especificadas'}`);
     res.json({ 
       message: 'Produto atualizado com sucesso',
       id: id

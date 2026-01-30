@@ -155,24 +155,46 @@
                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none"></textarea>
                 </div>
 
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Preço (R$) *</label>
-                        <input type="number" id="productPrice" required step="0.01" min="0" placeholder="0.00"
-                               class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Preço (R$) *</label>
+                    <input type="number" id="productPrice" required step="0.01" min="0" placeholder="0.00"
+                           class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
+                </div>
+
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Unidades Disponíveis *</label>
+                    <p class="text-xs text-gray-600 mb-3">Selecione uma ou mais unidades de medida para este produto:</p>
+                    <div class="grid grid-cols-2 gap-3" id="productUnitsContainer">
+                        <label class="flex items-center gap-3 p-3 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition">
+                            <input type="checkbox" class="product-unit-checkbox w-5 h-5" value="kg">
+                            <span class="font-semibold text-gray-700">kg</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition">
+                            <input type="checkbox" class="product-unit-checkbox w-5 h-5" value="un">
+                            <span class="font-semibold text-gray-700">un</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition">
+                            <input type="checkbox" class="product-unit-checkbox w-5 h-5" value="dúzia">
+                            <span class="font-semibold text-gray-700">dúzia</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition">
+                            <input type="checkbox" class="product-unit-checkbox w-5 h-5" value="bandeja">
+                            <span class="font-semibold text-gray-700">bandeja</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition">
+                            <input type="checkbox" class="product-unit-checkbox w-5 h-5" value="maço">
+                            <span class="font-semibold text-gray-700">maço</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition">
+                            <input type="checkbox" class="product-unit-checkbox w-5 h-5" value="litro">
+                            <span class="font-semibold text-gray-700">litro</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-3 border-2 border-gray-300 rounded-lg cursor-pointer hover:border-purple-500 hover:bg-purple-50 transition">
+                            <input type="checkbox" class="product-unit-checkbox w-5 h-5" value="palma">
+                            <span class="font-semibold text-gray-700">palma</span>
+                        </label>
                     </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Unidade *</label>
-                        <select id="productUnit" required
-                                class="w-full px-4 py-3 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
-                            <option value="kg">kg</option>
-                            <option value="un">un</option>
-                            <option value="dúzia">dúzia</option>
-                            <option value="bandeja">bandeja</option>
-                            <option value="maço">maço</option>
-                            <option value="litro">litro</option>
-                        </select>
-                    </div>
+                    <p id="unitsSelectedInfo" class="text-xs text-gray-600 mt-2">Nenhuma unidade selecionada</p>
                 </div>
 
                 <div>

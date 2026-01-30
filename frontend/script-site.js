@@ -187,7 +187,7 @@ function renderProducts(list) {
       <p class="text-lg font-bold text-green-600 mb-4">${formatPrice(product.price)} / ${product.unit}</p>
       <button class="mt-auto py-3 rounded-lg text-white font-bold"
         style="background:${product.color || '#7c3aed'}"
-        onclick="openQuantityModal('${product.id}')">
+        onclick="window.openProductSelection('${product.id}')">
         Adicionar
       </button>
     `;
@@ -213,6 +213,50 @@ document.getElementById('searchInput').addEventListener('input', e => {
 });
 
 // =======================
+// SELEÇÃO DE PRODUTO E UNIDADE
+// =======================
+window.openProductSelection = id => {
+  selectedProduct = products.find(p => p.id === id);
+  if (!selectedProduct) return;
+  
+  // Determinar as unidades disponíveis
+  const units = Array.isArray(selectedProduct.units) ? selectedProduct.units : [selectedProduct.unit];
+  
+  console.log(`📦 Produto: ${selectedProduct.name}, Unidades disponíveis:`, units);
+  
+  // Se apenas uma unidade, pular direto para quantidade
+  if (units.length === 1) {
+    selectedProduct.selectedUnit = units[0];
+    window.openQuantityModal(id);
+    return;
+  }
+  
+  // Se múltiplas unidades, abrir modal de seleção
+  document.getElementById('unitModalProductName').innerText = selectedProduct.name;
+  document.getElementById('unitModalProductImage').src = selectedProduct.image;
+  document.getElementById('unitModalProductPrice').innerText = formatPrice(selectedProduct.price);
+  
+  // Gerar botões para cada unidade
+  const unitOptions = document.getElementById('unitOptions');
+  unitOptions.innerHTML = units.map(unit => `
+    <button onclick="window.selectUnit('${unit}')" class="w-full p-4 bg-gradient-to-r from-purple-500 to-green-500 text-white rounded-lg font-bold text-lg hover:opacity-90 transition shadow-md">
+      ${unit}
+    </button>
+  `).join('');
+  
+  document.getElementById('unitModal').classList.remove('hidden');
+};
+
+window.selectUnit = unit => {
+  selectedProduct.selectedUnit = unit;
+  window.closeUnitModal();
+  window.openQuantityModal(selectedProduct.id);
+};
+
+window.closeUnitModal = () =>
+  document.getElementById('unitModal').classList.add('hidden');
+
+// =======================
 // MODAL QUANTIDADE
 // =======================
 window.openQuantityModal = id => {
@@ -221,8 +265,11 @@ window.openQuantityModal = id => {
 
   document.getElementById('modalProductName').innerText = selectedProduct.name;
   document.getElementById('modalProductImage').src = selectedProduct.image;
+  
+  // Usar a unidade selecionada ou a padrão
+  const unit = selectedProduct.selectedUnit || selectedProduct.unit;
   document.getElementById('modalProductPrice').innerText =
-    `${formatPrice(selectedProduct.price)} / ${selectedProduct.unit}`;
+    `${formatPrice(selectedProduct.price)} / ${unit}`;
   document.getElementById('quantityDisplay').innerText = '0';
   document.getElementById('quantityInput').value = '';
 
@@ -383,12 +430,23 @@ function animateProductToCart(productImage, productName) {
 window.addToCart = () => {
   if (!selectedQuantity) return;
 
-  const existing = cart.find(i => i.id === selectedProduct.id);
+  // Usar a unidade selecionada ou a padrão
+  const selectedUnit = selectedProduct.selectedUnit || selectedProduct.unit;
+  
+  // Criar ID único para cada combinação de produto + unidade
+  const cartItemId = `${selectedProduct.id}_${selectedUnit}`;
+  
+  const existing = cart.find(i => `${i.id}_${i.selectedUnit || i.unit}` === cartItemId);
 
   if (existing) {
     existing.quantity += selectedQuantity;
   } else {
-    cart.push({ ...selectedProduct, quantity: selectedQuantity });
+    const cartItem = { 
+      ...selectedProduct, 
+      quantity: selectedQuantity,
+      selectedUnit: selectedUnit
+    };
+    cart.push(cartItem);
   }
 
   // 🎨 Pega a imagem ANTES de fechar o modal
@@ -483,12 +541,15 @@ function updateCartUI() {
     const subtotal = item.price * item.quantity;
     total += subtotal;
     count += item.quantity;
+    
+    // Usar a unidade selecionada ou a padrão
+    const displayUnit = item.selectedUnit || item.unit || 'un';
 
     items.innerHTML += `
       <div class="flex justify-between items-center mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
         <div class="flex-1">
           <strong>${item.name}</strong><br>
-          <span class="text-gray-600">${formatPrice(item.price)} / ${item.unit || 'un'}</span>
+          <span class="text-gray-600">${formatPrice(item.price)} / ${displayUnit}</span>
         </div>
         
         <div class="flex items-center gap-3">
@@ -760,7 +821,7 @@ function iniciarPollingPix(id) {
           name: i.name,
           quantity: i.quantity,
           price: i.price,
-          unit: i.unit
+          unit: i.selectedUnit || i.unit
         })),
         total
       };
@@ -976,7 +1037,7 @@ async function processPaymentOnDelivery() {
       name: i.name,
       quantity: i.quantity,
       price: i.price,
-      unit: i.unit
+      unit: i.selectedUnit || i.unit
     })),
     total
   };
@@ -1017,7 +1078,7 @@ async function processPaymentOnDelivery() {
       name: i.name,
       quantity: i.quantity,
       price: i.price,
-      unit: i.unit
+      unit: i.selectedUnit || i.unit
     })),
     total
   };
