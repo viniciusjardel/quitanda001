@@ -542,11 +542,14 @@ window.selectDeliveryType = type => {
   // Adicionar estilos de seleção ao botão clicado
   if (type === 'local') {
     document.getElementById('localBtn').classList.add('border-green-500', 'bg-green-100', 'border-2');
+    document.getElementById('pickupForm').classList.remove('hidden');
+    document.getElementById('deliveryForm').classList.add('hidden');
   } else if (type === 'delivery') {
     document.getElementById('deliveryBtn').classList.add('border-blue-500', 'bg-blue-100', 'border-2');
+    document.getElementById('pickupForm').classList.add('hidden');
+    document.getElementById('deliveryForm').classList.remove('hidden');
   }
   
-  document.getElementById('deliveryForm').classList.toggle('hidden', type !== 'delivery');
   document.getElementById('paymentMethodSection').classList.remove('hidden');
 };
 
@@ -879,9 +882,15 @@ async function processPaymentOnDelivery() {
     paymentMethod: paymentMethod === 'card' ? 'Cartão' : 'Dinheiro'
   };
 
-  // Validar dados de entrega
-  if (!deliveryInfo.name || !deliveryInfo.phone || !deliveryInfo.address) {
-    alert('⚠️ Por favor, preencha todos os dados de entrega');
+  // Validar dados - para retirada local, endereço não é obrigatório
+  if (!deliveryInfo.name || !deliveryInfo.phone) {
+    alert('⚠️ Por favor, preencha nome e telefone');
+    return;
+  }
+
+  // Se for entrega, validar endereço
+  if (deliveryType === 'delivery' && !deliveryInfo.address) {
+    alert('⚠️ Por favor, preencha o endereço de entrega');
     return;
   }
 
