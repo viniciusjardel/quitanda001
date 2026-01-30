@@ -470,7 +470,7 @@ function renderPedidos(pedidos) {
         const paymentColor = p.payment_status === 'pago' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
         
         return `
-        <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-purple-400 transition cursor-pointer ${p.payment_status === 'pago' ? 'bg-green-50' : 'bg-yellow-50'}" onclick="abrirPedidoModal('${p.id}')">
+        <div class="pedido-item border-2 border-gray-200 rounded-lg p-4 hover:border-purple-400 transition cursor-pointer ${p.payment_status === 'pago' ? 'bg-green-50' : 'bg-yellow-50'}" data-pedido-id="${p.id}">
             <div class="flex justify-between items-start mb-3">
                 <div>
                     <h3 class="text-lg font-bold text-gray-800">Nota #${p.id}</h3>
@@ -494,6 +494,15 @@ function renderPedidos(pedidos) {
             </div>
         </div>
     `}).join('');
+    
+    // Adicionar event listeners aos pedidos
+    document.querySelectorAll('.pedido-item').forEach(item => {
+        item.addEventListener('click', function() {
+            const pedidoId = this.getAttribute('data-pedido-id');
+            console.log('%c🖱️ CLIQUE DETECTADO NO PEDIDO:', 'color: orange; font-weight: bold;', pedidoId);
+            window.abrirPedidoModal(pedidoId);
+        });
+    });
     
     console.log('%c✅ HTML gerado:', 'color: green; font-weight: bold;', `${list.innerHTML.length} caracteres`);
     console.log('%c✅ HTML dos pedidos renderizado na tela!', 'color: green; font-weight: bold;');
