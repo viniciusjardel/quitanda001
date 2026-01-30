@@ -534,12 +534,38 @@ window.sendOrderToWhatsApp = () => {
 
 window.selectDeliveryType = type => {
   deliveryType = type;
+  
+  // Remover estilos de seleção de todos os botões
+  document.getElementById('localBtn').classList.remove('border-green-500', 'bg-green-100', 'border-2');
+  document.getElementById('deliveryBtn').classList.remove('border-blue-500', 'bg-blue-100', 'border-2');
+  
+  // Adicionar estilos de seleção ao botão clicado
+  if (type === 'local') {
+    document.getElementById('localBtn').classList.add('border-green-500', 'bg-green-100', 'border-2');
+  } else if (type === 'delivery') {
+    document.getElementById('deliveryBtn').classList.add('border-blue-500', 'bg-blue-100', 'border-2');
+  }
+  
   document.getElementById('deliveryForm').classList.toggle('hidden', type !== 'delivery');
   document.getElementById('paymentMethodSection').classList.remove('hidden');
 };
 
 window.selectPaymentMethod = method => {
   paymentMethod = method;
+  
+  // Remover estilos de seleção de todos os botões de pagamento
+  document.getElementById('pixPaymentBtn').classList.remove('border-purple-500', 'bg-purple-100', 'border-2');
+  document.getElementById('cardPaymentBtn').classList.remove('border-blue-500', 'bg-blue-100', 'border-2');
+  document.getElementById('moneyPaymentBtn').classList.remove('border-green-500', 'bg-green-100', 'border-2');
+  
+  // Adicionar estilos de seleção ao botão clicado
+  if (method === 'pix') {
+    document.getElementById('pixPaymentBtn').classList.add('border-purple-500', 'bg-purple-100', 'border-2');
+  } else if (method === 'card') {
+    document.getElementById('cardPaymentBtn').classList.add('border-blue-500', 'bg-blue-100', 'border-2');
+  } else if (method === 'money') {
+    document.getElementById('moneyPaymentBtn').classList.add('border-green-500', 'bg-green-100', 'border-2');
+  }
   
   // Calcular total com delivery
   const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
