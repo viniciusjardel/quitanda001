@@ -18,6 +18,7 @@ let selectedQuantity = 0;
 let deliveryType = null;
 let paymentMethod = null;
 let pixInterval = null;
+let pendingWhatsAppUrl = null; // URL para enviar ao WhatsApp (opcional)
 
 // =======================
 // UTIL
@@ -513,6 +514,24 @@ window.closeDeliveryModal = () =>
 window.closePaymentConfirmModal = () =>
   document.getElementById('paymentConfirmModal').classList.add('hidden');
 
+window.openSuccessOrderModal = (orderId, message) => {
+  document.getElementById('successOrderId').textContent = orderId;
+  document.getElementById('successMessage').textContent = message;
+  document.getElementById('successOrderModal').classList.remove('hidden');
+};
+
+window.closeSuccessOrderModal = () => {
+  document.getElementById('successOrderModal').classList.add('hidden');
+  pendingWhatsAppUrl = null;
+};
+
+window.sendOrderToWhatsApp = () => {
+  if (pendingWhatsAppUrl) {
+    window.open(pendingWhatsAppUrl, '_blank');
+    window.closeSuccessOrderModal();
+  }
+};
+
 window.selectDeliveryType = type => {
   deliveryType = type;
   document.getElementById('deliveryForm').classList.toggle('hidden', type !== 'delivery');
@@ -691,9 +710,35 @@ function iniciarPollingPix(id) {
       cart = [];
       updateCartUI();
       
+      // Preparar mensagem para WhatsApp (opcional)
+      const customerName = document.getElementById('deliveryName').value;
+      const customerPhone = document.getElementById('deliveryPhone').value;
+      const customerAddress = document.getElementById('deliveryAddress').value;
+      const customerBloco = document.getElementById('deliveryBloco').value;
+      const customerApto = document.getElementById('deliveryApto').value;
+      
+      const message = `
+🛍️ *NOVO PEDIDO - Quitanda Villa Natal*
+
+*Cliente:* ${customerName}
+*Telefone:* ${customerPhone}
+*Endereço:* ${customerAddress}${customerBloco ? `, Bloco ${customerBloco}` : ''}${customerApto ? `, Apt ${customerApto}` : ''}
+
+*Produtos:*
+${cart.map(i => `• ${i.name} (${i.quantity}x) - R$ ${(i.price * i.quantity).toFixed(2)}`).join('\n')}
+
+${deliveryType === 'delivery' ? '🚗 *Entrega: Sim (+R$ 3,00)*' : '🏪 *Retirada: No Local*'}
+
+*Total: R$ ${pedidoCompleto.total.toFixed(2).replace('.', ',').replace(',', '.')}*
+*Forma de Pagamento: PIX (💰 PAGO)*
+      `.trim();
+
+      const encodedMessage = encodeURIComponent(message);
+      pendingWhatsAppUrl = `https://wa.me/5581971028677?text=${encodedMessage}`;
+      
       setTimeout(() => {
         closePixModal();
-        alert('✅ Seu pedido foi realizado com sucesso!\n\nPagamento confirmado via PIX!');
+        window.openSuccessOrderModal(pedidoCompleto.id, '✅ Seu pedido foi realizado com sucesso!\n\n💰 Pagamento confirmado via PIX!');
       }, 3000);
     }
   }, 2000);
@@ -902,6 +947,9 @@ ${deliveryType === 'delivery' ? '🚗 *Entrega: Sim (+R$ 3,00)*' : '🏪 *Retira
   const encodedMessage = encodeURIComponent(message);
   const whatsappUrl = `https://wa.me/5581971028677?text=${encodedMessage}`;
 
+  // Armazenar URL do WhatsApp para opcional
+  pendingWhatsAppUrl = whatsappUrl;
+
   // Limpar carrinho
   cart = [];
   localStorage.removeItem('hortifruti_cart');
@@ -910,10 +958,10 @@ ${deliveryType === 'delivery' ? '🚗 *Entrega: Sim (+R$ 3,00)*' : '🏪 *Retira
   // Fechar modals e mostrar sucesso
   closeDeliveryModal();
   
-  // Abrir WhatsApp
+  // Mostrar modal de sucesso com opção de WhatsApp
   setTimeout(() => {
-    window.open(whatsappUrl, '_blank');
-    alert(`✅ Pedido confirmado!\n\nForma de Pagamento: ${deliveryInfo.paymentMethod}\n\nUm texto foi enviado para o WhatsApp da loja.`);
+    const successMsg = `✅ Seu pedido foi confirmado!\n\n💳 Forma de Pagamento: ${deliveryInfo.paymentMethod}\n\nDeseja enviar para o WhatsApp da loja?`;
+    window.openSuccessOrderModal(pedidoCompleto.id, successMsg);
   }, 500);
 }
 

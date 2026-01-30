@@ -446,6 +446,31 @@
         </div>
     </div>
 
+    <!-- Success Order Modal with WhatsApp Option -->
+    <div id="successOrderModal" class="modal fixed inset-0 bg-black bg-opacity-70 hidden items-center justify-center z-50 p-4">
+        <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 border-l-4 border-green-500">
+            <div class="text-center mb-6">
+                <h3 class="text-4xl mb-3">✅</h3>
+                <h3 class="text-2xl font-bold text-gray-800 mb-2">Pedido Confirmado!</h3>
+                <p id="successMessage" class="text-base text-gray-600 leading-relaxed"></p>
+            </div>
+            
+            <div class="bg-green-50 rounded-xl p-4 mb-6 text-center border-2 border-green-200">
+                <p class="text-sm text-gray-600 mb-2">Seu pedido foi salvo no painel da loja</p>
+                <p class="text-lg font-bold text-green-600">📋 Nota #<span id="successOrderId"></span></p>
+            </div>
+
+            <div class="flex flex-col gap-3">
+                <button onclick="window.sendOrderToWhatsApp()" class="w-full bg-green-500 text-white py-3 rounded-lg font-bold hover:bg-green-600 transition flex items-center justify-center gap-2">
+                    💬 Enviar para WhatsApp
+                </button>
+                <button onclick="window.closeSuccessOrderModal()" class="w-full bg-gray-300 text-gray-800 py-3 rounded-lg font-bold hover:bg-gray-400 transition">
+                    Fechar
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Footer -->
     <footer class="gradient-bg text-white mt-16 py-8">
         <div class="container mx-auto px-4 text-center">
