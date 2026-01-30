@@ -600,30 +600,21 @@ window.abrirPedidoModal = function(id) {
     if (modal) {
         console.log('%c🔄 Classes do modal antes:', 'color: purple;', modal.className);
         
-        // REMOVER CLASSE HIDDEN
-        modal.classList.remove('hidden');
+        // REMOVER TODAS AS CLASSES TAILWIND QUE CONFLITAM
+        modal.className = '';
         
         // APLICAR CSS DIRETO COM !important (porque Tailwind conflita)
-        modal.setAttribute('style', `
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            z-index: 9999 !important;
-            background-color: rgba(0, 0, 0, 0.7) !important;
-            padding: 1rem !important;
-        `);
+        // Usar textContent de style para evitar problemas de parsing
+        const styleString = `position: fixed !important; top: 0 !important; left: 0 !important; right: 0 !important; bottom: 0 !important; width: 100% !important; height: 100% !important; display: flex !important; align-items: center !important; justify-content: center !important; z-index: 9999 !important; background-color: rgba(0, 0, 0, 0.7) !important; padding: 1rem !important;`;
+        modal.style.cssText = styleString;
         
-        console.log('%c🔄 Classes do modal depois:', 'color: purple;', modal.className);
-        console.log('%c📊 Atributo style:', 'color: purple;', modal.getAttribute('style'));
-        console.log('%c📊 getBoundingClientRect depois:', 'color: purple;', modal.getBoundingClientRect());
-        console.log('%c✅ MODAL DEVE ESTAR VISÍVEL AGORA!', 'color: green; font-weight: bold; font-size: 14px;');
+        // Aguardar um frame para garantir que o CSS foi aplicado
+        requestAnimationFrame(() => {
+            console.log('%c🔄 Classes do modal depois:', 'color: purple;', modal.className);
+            console.log('%c📊 Atributo style:', 'color: purple;', modal.getAttribute('style'));
+            console.log('%c📊 getBoundingClientRect depois:', 'color: purple;', modal.getBoundingClientRect());
+            console.log('%c✅ MODAL DEVE ESTAR VISÍVEL AGORA!', 'color: green; font-weight: bold; font-size: 14px;');
+        });
     } else {
         console.error('%c❌ ERRO CRÍTICO: Modal não encontrado no DOM!', 'color: red; font-weight: bold;');
     }
@@ -631,9 +622,9 @@ window.abrirPedidoModal = function(id) {
 
 function closePedidoModal() {
     const modal = document.getElementById('pedidoModal');
-    modal.classList.add('hidden');
-    // Remover estilos inline para deixar o hidden do CSS funcionar
-    modal.style.display = 'none';
+    // Restaurar classes originais para esconder
+    modal.className = 'fixed inset-0 bg-black bg-opacity-70 hidden flex items-center justify-center z-50 p-4';
+    modal.style.cssText = '';
     currentPedidoId = null;
 }
 
