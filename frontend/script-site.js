@@ -353,14 +353,14 @@ window.selectPaymentMethod = method => {
   confirmModal.classList.remove('hidden');
 };
 
-window.confirmPaymentMethod = () => {
+window.confirmPaymentMethod = async () => {
   window.closePaymentConfirmModal();
   
   if (paymentMethod === 'pix') {
     generatePix();
   } else if (paymentMethod === 'card' || paymentMethod === 'money') {
     // Processar pagamento na entrega
-    processPaymentOnDelivery();
+    await processPaymentOnDelivery();
   }
 };
 
@@ -494,7 +494,7 @@ window.addEventListener('DOMContentLoaded', async () => {
 // =======================
 // PAGAMENTO NA ENTREGA (CARTÃO / DINHEIRO)
 // =======================
-function processPaymentOnDelivery() {
+async function processPaymentOnDelivery() {
   const deliveryInfo = {
     name: document.getElementById('deliveryName').value,
     phone: document.getElementById('deliveryPhone').value,
