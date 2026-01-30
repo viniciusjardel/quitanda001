@@ -599,16 +599,8 @@ window.abrirPedidoModal = function(id) {
     
     if (modal) {
         console.log('%c🔄 Classes do modal antes:', 'color: purple;', modal.className);
-        console.log('%c📊 Display antes:', 'color: purple;', window.getComputedStyle(modal).display);
-        console.log('%c📊 Visibility antes:', 'color: purple;', window.getComputedStyle(modal).visibility);
-        
         modal.classList.remove('hidden');
-        modal.style.display = 'flex';
-        modal.style.visibility = 'visible';
-        
         console.log('%c🔄 Classes do modal depois:', 'color: purple;', modal.className);
-        console.log('%c📊 Display depois:', 'color: purple;', window.getComputedStyle(modal).display);
-        console.log('%c📊 Visibility depois:', 'color: purple;', window.getComputedStyle(modal).visibility);
         console.log('%c✅ MODAL DEVE ESTAR VISÍVEL AGORA!', 'color: green; font-weight: bold; font-size: 14px;');
     } else {
         console.error('%c❌ ERRO CRÍTICO: Modal não encontrado no DOM!', 'color: red; font-weight: bold;');
