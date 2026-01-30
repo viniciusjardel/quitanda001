@@ -1008,16 +1008,17 @@ async function processPaymentOnDelivery() {
 
   // Salvar pedido no localStorage com status de pagamento
   const pedidoCompleto = {
-    id: Date.now(), // ID único do pedido
+    id: 'ped_' + Date.now(), // ID único do pedido
     timestamp: new Date().toLocaleString('pt-BR'),
     customer_name: deliveryInfo.name,
     customer_phone: deliveryInfo.phone,
-    address: deliveryInfo.address,
+    address: deliveryInfo.address || 'Retirada no local',
     bloco: deliveryInfo.bloco,
     apto: deliveryInfo.apto,
     delivery_type: deliveryType,
     payment_method: deliveryInfo.paymentMethod,
-    payment_status: 'pendente', // Será 'pendente' até ser marcado como pago
+    payment_status: 'pendente',
+    payment_id: null,
     items: cart.map(i => ({
       id: i.id,
       name: i.name,
