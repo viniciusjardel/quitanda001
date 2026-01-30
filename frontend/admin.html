@@ -7,6 +7,21 @@
     <link rel="icon" type="image/png" href="img/logotipo quitanda villa natal.png">
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="styles.css">
+    <style>
+        /* Sobrescrever hidden para modais */
+        #pedidoModal.hidden {
+            display: none !important;
+        }
+        #pedidoModal:not(.hidden) {
+            display: flex !important;
+        }
+        #confirmacaoPagamentoModal.hidden {
+            display: none !important;
+        }
+        #confirmacaoPagamentoModal:not(.hidden) {
+            display: flex !important;
+        }
+    </style>
 </head>
 <body class="bg-gray-100">
     <!-- Header -->
