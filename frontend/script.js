@@ -581,4 +581,5 @@ window.addEventListener('pedidoAdicionado', (event) => {
 // =======================
 console.log('%c🔄 INICIALIZANDO PAINEL...', 'color: orange; font-weight: bold;');
 loadData();
+loadPedidos();
 console.log('%c✨ PAINEL PRONTO!', 'color: green; font-weight: bold; font-size: 14px;');
