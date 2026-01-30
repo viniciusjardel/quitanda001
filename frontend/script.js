@@ -5,6 +5,14 @@ console.log('%c🚀 ADMIN PANEL LOADED', 'color: green; font-weight: bold; font-
 const API_URL = 'https://quitanda-produtos-api.onrender.com'; // Será atualizada após deploy
 
 // =======================
+// VARIÁVEIS GLOBAIS
+// =======================
+let products = [];
+let editingProductId = null;
+let allPedidos = [];
+let currentPedidoId = null;
+
+// =======================
 // DIAGNÓSTICO DE LOCALSTORAGE
 // =======================
 window.diagnosticarPedidos = function() {
@@ -27,10 +35,6 @@ window.diagnosticarPedidos = function() {
 
 // Chamar diagnóstico na inicialização
 window.diagnosticarPedidos();
-// Para testes locais: const API_URL = 'http://localhost:3001';
-
-let products = [];
-let editingProductId = null;
 
 // =======================
 // CARREGAR PRODUTOS DA API
@@ -355,11 +359,7 @@ async function deleteProduct(id) {
 
 // =======================
 // GERENCIAR PEDIDOS
-// =======================
-let allPedidos = [];
-let currentPedidoId = null;
-
-// =======================
+// =======================// =======================
 // 📋 CARREGAR PEDIDOS
 // =======================
 async function loadPedidos() {
