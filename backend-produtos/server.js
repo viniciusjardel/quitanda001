@@ -84,7 +84,10 @@ app.get('/', (req, res) => {
 app.get('/produtos', async (req, res) => {
   try {
     const result = await pool.query('SELECT * FROM produtos ORDER BY created_at DESC');
-    const produtos = result.rows;
+    const produtos = result.rows.map(p => ({
+      ...p,
+      price: parseFloat(p.price)
+    }));
     console.log(`📦 GET /produtos: ${produtos.length} produtos`);
     res.json(produtos);
   } catch (error) {
@@ -106,7 +109,10 @@ app.get('/produtos/:id', async (req, res) => {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
     
-    res.json(produto);
+    res.json({
+      ...produto,
+      price: parseFloat(produto.price)
+    });
   } catch (error) {
     console.error('❌ Erro ao buscar produto:', error);
     res.status(500).json({ error: 'Erro ao buscar produto' });
