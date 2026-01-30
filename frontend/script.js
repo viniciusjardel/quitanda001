@@ -473,7 +473,8 @@ function renderPedidos(pedidos) {
         <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-purple-400 transition cursor-pointer ${p.payment_status === 'pago' ? 'bg-green-50' : 'bg-yellow-50'}" onclick="abrirPedidoModal('${p.id}')">
             <div class="flex justify-between items-start mb-3">
                 <div>
-                    <h3 class="text-lg font-bold text-gray-800">${p.customer_name}</h3>
+                    <h3 class="text-lg font-bold text-gray-800">Nota #${p.id}</h3>
+                    <p class="text-sm text-gray-700 font-semibold">${p.customer_name}</p>
                     <p class="text-sm text-gray-500">📱 ${p.customer_phone}</p>
                 </div>
                 <div class="flex gap-2">
@@ -515,55 +516,74 @@ function abrirPedidoModal(id) {
     
     const itens = typeof pedido.items === 'string' ? JSON.parse(pedido.items) : pedido.items || [];
     
+    // ===== PREENCHER CABEÇALHO DA NOTA =====
+    document.getElementById('notaNumero').textContent = `Nota #${pedido.id}`;
+    const dataFormatada = new Date(pedido.created_at).toLocaleDateString('pt-BR');
+    const horaFormatada = new Date(pedido.created_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
+    document.getElementById('notaData').textContent = `${dataFormatada} às ${horaFormatada}`;
     
-    const paymentStatusBadge = pedido.payment_status === 'pago' 
-        ? '<span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">✅ PAGO</span>'
-        : '<span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-semibold">❌ PENDENTE</span>';
-    
-    const marcarPagoButton = pedido.payment_status !== 'pago' && pedido.payment_method !== 'PIX' 
-        ? `<button onclick="marcarComoPago('${pedido.id}')" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">💰 Marcar como Pago</button>`
-        : '';
-    
-    const content = `
-        <div class="space-y-2 pb-4 border-b">
-            <h4 class="font-bold text-lg">💳 Status de Pagamento</h4>
-            <div>${paymentStatusBadge}</div>
-            <p><strong>Método:</strong> ${pedido.payment_method}</p>
-            ${pedido.payment_id ? `<p><strong>ID Transação:</strong> ${pedido.payment_id}</p>` : ''}
-            ${marcarPagoButton}
-        </div>
-
-        <div class="space-y-2 pb-4 border-b">
-            <h4 class="font-bold text-lg">👤 Cliente</h4>
-            <p><strong>Nome:</strong> ${pedido.customer_name}</p>
-            <p><strong>Telefone:</strong> <a href="tel:${pedido.customer_phone}" class="text-blue-600">${pedido.customer_phone}</a></p>
-        </div>
-
-        <div class="space-y-2 pb-4 border-b">
-            <h4 class="font-bold text-lg">📍 Endereço</h4>
-            <p>${pedido.address}${pedido.bloco ? `, Bloco ${pedido.bloco}` : ''}${pedido.apto ? `, Apt ${pedido.apto}` : ''}</p>
-            <p><strong>Tipo:</strong> ${pedido.delivery_type === 'delivery' ? '🚗 Entrega' : '🏪 Retirada'}</p>
-        </div>
-
-        <div class="space-y-2 pb-4 border-b">
-            <h4 class="font-bold text-lg">🛒 Itens (${itens.length})</h4>
-            ${itens.map(i => `<p>• ${i.name} (${i.quantity}x ${i.unit}) - R$ ${(i.price * i.quantity).toFixed(2).replace('.', ',')}</p>`).join('')}
-        </div>
-
-        <div class="space-y-2 pb-4 border-b">
-            <h4 class="font-bold text-lg">💰 Valor Total</h4>
-            <p class="text-2xl font-bold text-green-600">R$ ${parseFloat(pedido.total).toFixed(2).replace('.', ',')}</p>
-        </div>
-
-        <div class="space-y-2 pb-4">
-            <h4 class="font-bold text-lg">📅 Data e Hora</h4>
-            <p>${new Date(pedido.created_at).toLocaleDateString('pt-BR')} às ${new Date(pedido.created_at).toLocaleTimeString('pt-BR')}</p>
-        </div>
+    // ===== PREENCHER INFORMAÇÕES DO CLIENTE =====
+    document.getElementById('notaCliente').innerHTML = `
+        <p><strong>Nome:</strong> ${pedido.customer_name}</p>
+        <p><strong>Telefone:</strong> <a href="tel:${pedido.customer_phone}" class="text-blue-600">${pedido.customer_phone}</a></p>
     `;
-
-    document.getElementById('pedidoDetailsContent').innerHTML = content;
+    
+    // ===== PREENCHER INFORMAÇÕES DE ENTREGA =====
+    const tipoEntrega = pedido.delivery_type === 'delivery' ? '🚗 Entrega' : '🏪 Retirada';
+    document.getElementById('notaEntrega').innerHTML = `
+        <p><strong>Endereço:</strong> ${pedido.address}${pedido.bloco ? `, Bloco ${pedido.bloco}` : ''}${pedido.apto ? `, Apt ${pedido.apto}` : ''}</p>
+        <p><strong>Tipo:</strong> ${tipoEntrega}</p>
+    `;
+    
+    // ===== PREENCHER PRODUTOS =====
+    document.getElementById('notaProdutos').innerHTML = itens.map((i, index) => {
+        const subtotal = (i.price * i.quantity).toFixed(2).replace('.', ',');
+        return `
+            <div class="flex justify-between items-center py-2 border-b">
+                <div class="flex-1">
+                    <p class="font-semibold text-gray-800">${index + 1}. ${i.name}</p>
+                    <p class="text-sm text-gray-600">${i.quantity}x ${i.unit} @ R$ ${parseFloat(i.price).toFixed(2).replace('.', ',')}</p>
+                </div>
+                <p class="font-bold text-gray-800">R$ ${subtotal}</p>
+            </div>
+        `;
+    }).join('');
+    
+    // ===== PREENCHER TOTAL =====
+    document.getElementById('notaTotal').textContent = `R$ ${parseFloat(pedido.total).toFixed(2).replace('.', ',')}`;
+    
+    // ===== VERIFICAR SE DEVE MOSTRAR BOTÕES DE PAGAMENTO =====
+    const metodosPagamentoBotoes = ['dinheiro', 'cartão', 'cartao']; // Aceita variações
+    const deveMostrarBotoes = metodosPagamentoBotoes.some(metodo => 
+        pedido.payment_method.toLowerCase().includes(metodo)
+    );
+    
+    const areaBotoes = document.getElementById('areaStatusPagamento');
+    if (deveMostrarBotoes) {
+        areaBotoes.classList.remove('hidden');
+        
+        // Determinar qual botão está ativo
+        const statusAtual = pedido.payment_status || 'pendente';
+        
+        document.getElementById('botoesStatusPagamento').innerHTML = `
+            <button class="w-full p-3 rounded-lg font-bold transition ${statusAtual === 'cancelado' ? 'bg-red-500 text-white border-2 border-red-700' : 'bg-red-100 text-red-800 hover:bg-red-200'}" onclick="preparaConfirmacaoPagamento('cancelado', 'Pedido Cancelado')">
+                ❌ Pedido Cancelado
+            </button>
+            <button class="w-full p-3 rounded-lg font-bold transition ${statusAtual === 'pendente' ? 'bg-yellow-500 text-white border-2 border-yellow-700' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'}" onclick="preparaConfirmacaoPagamento('pendente', 'Pagamento Pendente')">
+                🟡 Pagamento Pendente
+            </button>
+            <button class="w-full p-3 rounded-lg font-bold transition ${statusAtual === 'pago' ? 'bg-green-500 text-white border-2 border-green-700' : 'bg-green-100 text-green-800 hover:bg-green-200'}" onclick="preparaConfirmacaoPagamento('pago', 'Pagamento Confirmado')">
+                ✅ Pagamento Confirmado
+            </button>
+        `;
+    } else {
+        areaBotoes.classList.add('hidden');
+    }
+    
+    // ===== PREENCHER OUTROS CAMPOS =====
     document.getElementById('pedidoStatus').value = pedido.status;
     document.getElementById('pedidoNotes').value = pedido.notes || '';
+    
     document.getElementById('pedidoModal').classList.remove('hidden');
 }
 
@@ -595,44 +615,78 @@ async function salvarPedidoChanges() {
     loadPedidos();
 }
 
-// Marcar pedido como pago (para Cartão/Dinheiro)
-function marcarComoPago(pedidoId) {
-    console.log('%c💰 Marcando como pago:', 'color: blue;', pedidoId);
+// Variáveis globais para confirmação
+let statusPagamentoEmAlterar = null;
+let textoStatusPagamento = '';
+
+// Preparar confirmação para mudar status de pagamento
+function preparaConfirmacaoPagamento(novoStatus, descricao) {
+    statusPagamentoEmAlterar = novoStatus;
+    textoStatusPagamento = descricao;
     
-    // Comparar como string e número
-    const pedido = allPedidos.find(p => p.id == pedidoId || p.id === pedidoId || String(p.id) === String(pedidoId));
+    const statusMap = {
+        'cancelado': '❌ Pedido Cancelado',
+        'pendente': '🟡 Pagamento Pendente',
+        'pago': '✅ Pagamento Confirmado'
+    };
     
-    if (!pedido) {
-        console.error('%c❌ Pedido não encontrado', 'color: red;', 'ID:', pedidoId);
+    document.getElementById('confirmacaoTexto').innerHTML = `
+        <p>Tem certeza que deseja alterar o status para:</p>
+        <p class="font-bold text-lg mt-2">${statusMap[novoStatus] || descricao}</p>
+    `;
+    
+    document.getElementById('confirmacaoPagamentoModal').classList.remove('hidden');
+}
+
+// Confirmar e executar mudança de status
+function confirmarMudancaStatusPagamento() {
+    if (!statusPagamentoEmAlterar || !currentPedidoId) {
+        alert('❌ Erro ao processar a confirmação');
         return;
     }
     
+    console.log('%c💰 Confirmando mudança de status:', 'color: blue;', statusPagamentoEmAlterar);
+    
     // Atualizar no backend
-    fetch(`${API_URL}/pedidos/${pedido.id}`, {
+    fetch(`${API_URL}/pedidos/${currentPedidoId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payment_status: 'pago' })
+        body: JSON.stringify({ payment_status: statusPagamentoEmAlterar })
     })
     .then(response => {
         if (!response.ok) throw new Error('Erro ao atualizar no backend');
-        console.log('%c✅ Pedido marcado como pago no backend', 'color: green;');
+        console.log('%c✅ Status atualizado no backend', 'color: green;');
         
         // Atualizar em localStorage também
         let orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
-        const orderIndex = orders.findIndex(o => o.id == pedidoId || o.id === pedidoId || String(o.id) === String(pedidoId));
+        const orderIndex = orders.findIndex(o => o.id == currentPedidoId || o.id === currentPedidoId || String(o.id) === String(currentPedidoId));
         if (orderIndex >= 0) {
-            orders[orderIndex].payment_status = 'pago';
+            orders[orderIndex].payment_status = statusPagamentoEmAlterar;
             localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
         }
         
-        alert('✅ Pagamento marcado como confirmado!');
+        const statusMap = {
+            'cancelado': 'Pedido Cancelado',
+            'pendente': 'Pagamento Pendente',
+            'pago': 'Pagamento Confirmado'
+        };
+        
+        alert(`✅ ${statusMap[statusPagamentoEmAlterar] || 'Status'} registrado com sucesso!`);
+        cancelarConfirmacao();
         loadPedidos();
-        closePedidoModal();
+        abrirPedidoModal(currentPedidoId); // Reabrir modal para mostrar mudanças
     })
     .catch(error => {
-        console.error('%c❌ Erro ao marcar como pago:', 'color: red;', error);
+        console.error('%c❌ Erro ao alterar status:', 'color: red;', error);
         alert('❌ Erro ao salvar no banco de dados. Tente novamente.');
     });
+}
+
+// Cancelar confirmação
+function cancelarConfirmacao() {
+    statusPagamentoEmAlterar = null;
+    textoStatusPagamento = '';
+    document.getElementById('confirmacaoPagamentoModal').classList.add('hidden');
 }
 
 // Buscar pedidos
