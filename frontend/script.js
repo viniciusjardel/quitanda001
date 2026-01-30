@@ -343,31 +343,41 @@ async function loadPedidos() {
     
     // Carregar do localStorage primeiro (mais rápido)
     const localOrders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
+    console.log('%c📦 Pedidos do localStorage:', 'color: cyan;', localOrders.length, localOrders);
+    
+    if (localOrders.length === 0) {
+        console.warn('%c⚠️ Nenhum pedido no localStorage!', 'color: orange;');
+    }
     
     // Transformar pedidos do localStorage para formato compatível
     allPedidos = localOrders.map(order => ({
-        id: order.id,
-        customer_name: order.customer_name,
-        customer_phone: order.customer_phone,
-        address: order.address,
-        bloco: order.bloco,
-        apto: order.apto,
-        delivery_type: order.delivery_type,
-        payment_method: order.payment_method,
+        id: order.id, // Manter como é
+        customer_name: order.customer_name || 'N/A',
+        customer_phone: order.customer_phone || 'N/A',
+        address: order.address || 'Retirada no local',
+        bloco: order.bloco || '',
+        apto: order.apto || '',
+        delivery_type: order.delivery_type || 'local',
+        payment_method: order.payment_method || 'N/A',
         payment_status: order.payment_status || 'pendente',
         payment_id: order.payment_id,
-        items: order.items,
-        total: order.total,
+        items: order.items || [],
+        total: order.total || 0,
         status: 'pendente',
         notes: '',
-        created_at: order.timestamp,
-        updated_at: order.timestamp
+        created_at: order.timestamp || new Date().toLocaleString('pt-BR'),
+        updated_at: order.timestamp || new Date().toLocaleString('pt-BR')
     }));
     
     // Ordenar por data (mais recentes primeiro)
-    allPedidos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    allPedidos.sort((a, b) => {
+        const dateA = new Date(a.created_at);
+        const dateB = new Date(b.created_at);
+        return dateB - dateA;
+    });
     
     console.log('%c✅ Pedidos carregados:', 'color: green;', allPedidos.length);
+    console.log('%c📊 Dados processados:', 'color: magenta;', allPedidos);
     renderPedidos(allPedidos);
 }
 
@@ -422,11 +432,22 @@ function renderPedidos(pedidos) {
 }
 
 function abrirPedidoModal(id) {
+    console.log('%c🔍 Abrindo modal para ID:', 'color: blue;', id, 'Tipo:', typeof id);
     currentPedidoId = id;
-    const pedido = allPedidos.find(p => p.id === id);
-    if (!pedido) return;
+    
+    // Comparar como string e número para garantir compatibilidade
+    const pedido = allPedidos.find(p => p.id == id || p.id === id || String(p.id) === String(id));
+    
+    if (!pedido) {
+        console.error('%c❌ Pedido não encontrado!', 'color: red;', 'ID:', id);
+        console.log('%c📋 Pedidos disponíveis:', 'color: cyan;', allPedidos.map(p => ({id: p.id, name: p.customer_name})));
+        return;
+    }
 
-    const itens = typeof pedido.items === 'string' ? JSON.parse(pedido.items) : pedido.items;
+    console.log('%c✅ Pedido encontrado:', 'color: green;', pedido);
+    
+    const itens = typeof pedido.items === 'string' ? JSON.parse(pedido.items) : pedido.items || [];
+    
     
     const paymentStatusBadge = pedido.payment_status === 'pago' 
         ? '<span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">✅ PAGO</span>'
@@ -509,16 +530,21 @@ async function salvarPedidoChanges() {
 
 // Marcar pedido como pago (para Cartão/Dinheiro)
 function marcarComoPago(pedidoId) {
+    console.log('%c💰 Marcando como pago:', 'color: blue;', pedidoId);
     let orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
-    const orderIndex = orders.findIndex(o => o.id === pedidoId);
+    
+    // Comparar como string e número
+    const orderIndex = orders.findIndex(o => o.id == pedidoId || o.id === pedidoId || String(o.id) === String(pedidoId));
     
     if (orderIndex >= 0) {
         orders[orderIndex].payment_status = 'pago';
         localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
-        console.log('✅ Pedido marcado como pago');
+        console.log('%c✅ Pedido marcado como pago', 'color: green;');
         alert('✅ Pagamento marcado como confirmado!');
         loadPedidos();
         closePedidoModal();
+    } else {
+        console.error('%c❌ Pedido não encontrado para marcar como pago', 'color: red;', 'ID:', pedidoId);
     }
 }
 
