@@ -440,9 +440,17 @@ function setupAutoRefreshPedidos() {
 // 📊 RENDERIZAR PEDIDOS
 // =======================
 function renderPedidos(pedidos) {
+    console.log('%c🎨 RENDERIZANDO PEDIDOS...', 'color: green; font-weight: bold;', pedidos.length);
+    
     const list = document.getElementById('pedidosList');
     
+    if (!list) {
+        console.error('%c❌ ERRO: Elemento #pedidosList não encontrado!', 'color: red; font-weight: bold;');
+        return;
+    }
+    
     if (pedidos.length === 0) {
+        console.log('%c📭 Nenhum pedido encontrado', 'color: orange;');
         list.innerHTML = '<p class="text-center text-gray-500 py-8">Nenhum pedido encontrado</p>';
         return;
     }
