@@ -82,7 +82,7 @@ Admin salva → localStorage + sessionStorage + window.name
 ## 📞 Contato
 
 Hortifruti Villa Natal
-📍 Av. General Manoel Rabelo, 1725 - Jabotão
+📍 Av. General Manoel Rabelo, 1725 - Jaboatão dos Guararapes
 📱 WhatsApp: [número]
 🕐 SEG-DOM • 08h00 às 19h00
 

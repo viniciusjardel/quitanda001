@@ -330,43 +330,50 @@ async function deleteProduct(id) {
 }
 
 // =======================
-// NAVEGAÇÃO ABAS
-// =======================
-function showTab(tabName) {
-    document.querySelectorAll('.tab-content').forEach(tab => {
-        tab.classList.add('hidden');
-    });
-    
-    document.querySelectorAll('.tab-btn').forEach(btn => {
-        btn.classList.remove('border-purple-600', 'text-purple-600');
-        btn.classList.add('border-transparent', 'text-gray-600');
-    });
-    
-    document.getElementById(`content-${tabName}`).classList.remove('hidden');
-    
-    const btn = document.getElementById(`tab-${tabName}`);
-    btn.classList.add('border-purple-600', 'text-purple-600');
-    btn.classList.remove('border-transparent', 'text-gray-600');
-}
-
-// =======================
 // GERENCIAR PEDIDOS
 // =======================
 let allPedidos = [];
 let currentPedidoId = null;
 
+// =======================
+// 📋 CARREGAR PEDIDOS
+// =======================
 async function loadPedidos() {
-    try {
-        const response = await fetch(`${API_URL}/pedidos`);
-        if (!response.ok) throw new Error('Erro ao buscar pedidos');
-        allPedidos = await response.json();
-        renderPedidos(allPedidos);
-    } catch (error) {
-        console.error('❌ Erro ao carregar pedidos:', error);
-        document.getElementById('pedidosList').innerHTML = '<p class="text-center text-red-500">Erro ao carregar pedidos</p>';
-    }
+    console.log('%c📋 CARREGANDO PEDIDOS...', 'color: blue; font-weight: bold;');
+    
+    // Carregar do localStorage primeiro (mais rápido)
+    const localOrders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
+    
+    // Transformar pedidos do localStorage para formato compatível
+    allPedidos = localOrders.map(order => ({
+        id: order.id,
+        customer_name: order.customer_name,
+        customer_phone: order.customer_phone,
+        address: order.address,
+        bloco: order.bloco,
+        apto: order.apto,
+        delivery_type: order.delivery_type,
+        payment_method: order.payment_method,
+        payment_status: order.payment_status || 'pendente',
+        payment_id: order.payment_id,
+        items: order.items,
+        total: order.total,
+        status: 'pendente',
+        notes: '',
+        created_at: order.timestamp,
+        updated_at: order.timestamp
+    }));
+    
+    // Ordenar por data (mais recentes primeiro)
+    allPedidos.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    
+    console.log('%c✅ Pedidos carregados:', 'color: green;', allPedidos.length);
+    renderPedidos(allPedidos);
 }
 
+// =======================
+// 📊 RENDERIZAR PEDIDOS
+// =======================
 function renderPedidos(pedidos) {
     const list = document.getElementById('pedidosList');
     
@@ -384,14 +391,21 @@ function renderPedidos(pedidos) {
         'cancelado': '❌'
     };
 
-    list.innerHTML = pedidos.map(p => `
-        <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-purple-400 transition cursor-pointer" onclick="abrirPedidoModal('${p.id}')">
+    list.innerHTML = pedidos.map(p => {
+        const paymentBadge = p.payment_status === 'pago' ? '✅ Pago' : '❌ Pendente';
+        const paymentColor = p.payment_status === 'pago' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+        
+        return `
+        <div class="border-2 border-gray-200 rounded-lg p-4 hover:border-purple-400 transition cursor-pointer ${p.payment_status === 'pago' ? 'bg-green-50' : 'bg-yellow-50'}" onclick="abrirPedidoModal('${p.id}')">
             <div class="flex justify-between items-start mb-3">
                 <div>
                     <h3 class="text-lg font-bold text-gray-800">${p.customer_name}</h3>
                     <p class="text-sm text-gray-500">📱 ${p.customer_phone}</p>
                 </div>
-                <span class="text-xl">${statusEmojis[p.status] || '❓'} ${p.status.toUpperCase()}</span>
+                <div class="flex gap-2">
+                    <span class="px-3 py-1 rounded-full text-sm font-semibold ${paymentColor}">${paymentBadge}</span>
+                    <span class="text-xl">${statusEmojis[p.status] || '❓'}</span>
+                </div>
             </div>
             
             <p class="text-sm text-gray-600 mb-2">📍 ${p.address}${p.bloco ? `, Bloco ${p.bloco}` : ''}${p.apto ? `, Apt ${p.apto}` : ''}</p>
@@ -401,10 +415,10 @@ function renderPedidos(pedidos) {
                 <div>
                     <span class="text-xs text-gray-500">${new Date(p.created_at).toLocaleDateString('pt-BR')} ${new Date(p.created_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
                 </div>
-                <span class="text-xl font-bold text-green-600">R$ ${p.total.toFixed(2).replace('.', ',')}</span>
+                <span class="text-xl font-bold text-green-600">R$ ${parseFloat(p.total).toFixed(2).replace('.', ',')}</span>
             </div>
         </div>
-    `).join('');
+    `}).join('');
 }
 
 function abrirPedidoModal(id) {
@@ -414,7 +428,23 @@ function abrirPedidoModal(id) {
 
     const itens = typeof pedido.items === 'string' ? JSON.parse(pedido.items) : pedido.items;
     
+    const paymentStatusBadge = pedido.payment_status === 'pago' 
+        ? '<span class="px-3 py-1 bg-green-100 text-green-800 rounded-full text-sm font-semibold">✅ PAGO</span>'
+        : '<span class="px-3 py-1 bg-red-100 text-red-800 rounded-full text-sm font-semibold">❌ PENDENTE</span>';
+    
+    const marcarPagoButton = pedido.payment_status !== 'pago' && pedido.payment_method !== 'PIX' 
+        ? `<button onclick="marcarComoPago('${pedido.id}')" class="mt-2 px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600">💰 Marcar como Pago</button>`
+        : '';
+    
     const content = `
+        <div class="space-y-2 pb-4 border-b">
+            <h4 class="font-bold text-lg">💳 Status de Pagamento</h4>
+            <div>${paymentStatusBadge}</div>
+            <p><strong>Método:</strong> ${pedido.payment_method}</p>
+            ${pedido.payment_id ? `<p><strong>ID Transação:</strong> ${pedido.payment_id}</p>` : ''}
+            ${marcarPagoButton}
+        </div>
+
         <div class="space-y-2 pb-4 border-b">
             <h4 class="font-bold text-lg">👤 Cliente</h4>
             <p><strong>Nome:</strong> ${pedido.customer_name}</p>
@@ -424,22 +454,22 @@ function abrirPedidoModal(id) {
         <div class="space-y-2 pb-4 border-b">
             <h4 class="font-bold text-lg">📍 Endereço</h4>
             <p>${pedido.address}${pedido.bloco ? `, Bloco ${pedido.bloco}` : ''}${pedido.apto ? `, Apt ${pedido.apto}` : ''}</p>
+            <p><strong>Tipo:</strong> ${pedido.delivery_type === 'delivery' ? '🚗 Entrega' : '🏪 Retirada'}</p>
         </div>
 
         <div class="space-y-2 pb-4 border-b">
             <h4 class="font-bold text-lg">🛒 Itens (${itens.length})</h4>
-            ${itens.map(i => `<p>• ${i.name} (${i.quantity}x) - R$ ${(i.price * i.quantity).toFixed(2).replace('.', ',')}</p>`).join('')}
+            ${itens.map(i => `<p>• ${i.name} (${i.quantity}x ${i.unit}) - R$ ${(i.price * i.quantity).toFixed(2).replace('.', ',')}</p>`).join('')}
         </div>
 
         <div class="space-y-2 pb-4 border-b">
             <h4 class="font-bold text-lg">💰 Valor Total</h4>
-            <p class="text-2xl font-bold text-green-600">R$ ${pedido.total.toFixed(2).replace('.', ',')}</p>
+            <p class="text-2xl font-bold text-green-600">R$ ${parseFloat(pedido.total).toFixed(2).replace('.', ',')}</p>
         </div>
 
         <div class="space-y-2 pb-4">
-            <h4 class="font-bold text-lg">📅 Data</h4>
+            <h4 class="font-bold text-lg">📅 Data e Hora</h4>
             <p>${new Date(pedido.created_at).toLocaleDateString('pt-BR')} às ${new Date(pedido.created_at).toLocaleTimeString('pt-BR')}</p>
-            <p class="text-xs text-gray-500">Atualizado: ${new Date(pedido.updated_at).toLocaleDateString('pt-BR')} às ${new Date(pedido.updated_at).toLocaleTimeString('pt-BR')}</p>
         </div>
     `;
 
@@ -457,24 +487,38 @@ function closePedidoModal() {
 async function salvarPedidoChanges() {
     if (!currentPedidoId) return;
 
+    const pedido = allPedidos.find(p => p.id === currentPedidoId);
+    if (!pedido) return;
+
     const status = document.getElementById('pedidoStatus').value;
     const notes = document.getElementById('pedidoNotes').value;
 
-    try {
-        const response = await fetch(`${API_URL}/pedidos/${currentPedidoId}`, {
-            method: 'PUT',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status, notes })
-        });
+    // Atualizar no localStorage
+    let orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
+    const orderIndex = orders.findIndex(o => o.id === currentPedidoId);
+    if (orderIndex >= 0) {
+        orders[orderIndex].status = status;
+        orders[orderIndex].notes = notes;
+        localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
+        console.log('✅ Pedido atualizado no localStorage');
+    }
 
-        if (response.ok) {
-            console.log('✅ Pedido atualizado com sucesso');
-            closePedidoModal();
-            loadPedidos();
-        }
-    } catch (error) {
-        console.error('❌ Erro ao salvar pedido:', error);
-        alert('Erro ao salvar alterações');
+    closePedidoModal();
+    loadPedidos();
+}
+
+// Marcar pedido como pago (para Cartão/Dinheiro)
+function marcarComoPago(pedidoId) {
+    let orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
+    const orderIndex = orders.findIndex(o => o.id === pedidoId);
+    
+    if (orderIndex >= 0) {
+        orders[orderIndex].payment_status = 'pago';
+        localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
+        console.log('✅ Pedido marcado como pago');
+        alert('✅ Pagamento marcado como confirmado!');
+        loadPedidos();
+        closePedidoModal();
     }
 }
 
@@ -514,6 +558,23 @@ window.showTab = function(tab) {
         loadPedidos();
     }
 };
+
+// =======================
+// 🔄 SINCRONIZAÇÃO DE ABAS
+// =======================
+// Escutar mudanças no localStorage (outros pedidos)
+window.addEventListener('storage', (event) => {
+    if (event.key === 'hortifruti_orders') {
+        console.log('%c🔄 PEDIDOS ATUALIZADOS DE OUTRA ABA!', 'color: blue; font-weight: bold;');
+        loadPedidos();
+    }
+});
+
+// Escutar novos pedidos adicionados via CustomEvent (mesma aba)
+window.addEventListener('pedidoAdicionado', (event) => {
+    console.log('%c📦 NOVO PEDIDO ADICIONADO!', 'color: green; font-weight: bold;');
+    loadPedidos();
+});
 
 // =======================
 // INICIALIZAR

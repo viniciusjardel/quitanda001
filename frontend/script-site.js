@@ -218,6 +218,136 @@ function updateQuantity(val) {
 // =======================
 // CARRINHO
 // =======================
+// 💬 MENSAGEM DE SUCESSO
+// =======================
+function showSuccessMessage(productName) {
+  console.log('💬 Mostrando mensagem de sucesso para:', productName);
+  
+  // Pega as coordenadas do carrinho
+  const cartButton = document.querySelector('button[onclick="window.toggleCart()"]');
+  const cartRect = cartButton.getBoundingClientRect();
+  
+  // Cria a mensagem
+  const message = document.createElement('div');
+  message.id = 'success-message-' + Date.now();
+  message.style.position = 'fixed';
+  message.style.left = cartRect.left + 'px';
+  message.style.top = cartRect.top + 'px';
+  message.style.zIndex = '9998';
+  message.style.pointerEvents = 'none';
+  message.style.backgroundColor = '#10b981';
+  message.style.color = 'white';
+  message.style.padding = '16px 24px';
+  message.style.borderRadius = '12px';
+  message.style.fontWeight = 'bold';
+  message.style.fontSize = '14px';
+  message.style.boxShadow = '0 10px 30px rgba(16, 185, 129, 0.4)';
+  message.style.maxWidth = '300px';
+  message.style.textAlign = 'center';
+  message.innerHTML = `✅ ${productName}<br><span style="font-size: 12px; font-weight: 500;">adicionado ao carrinho</span>`;
+  
+  document.body.appendChild(message);
+  
+  // Força reflow
+  message.offsetHeight;
+  
+  // Calcula posição do meio da tela
+  const centerX = (window.innerWidth / 2) - 150; // 150 é aproximadamente metade da largura da mensagem
+  const centerY = (window.innerHeight / 2) - 50; // 50 é aproximadamente metade da altura da mensagem
+  
+  // Distância a percorrer
+  const distX = centerX - cartRect.left;
+  const distY = centerY - cartRect.top;
+  
+  console.log('💫 Animando mensagem de:', { x: cartRect.left, y: cartRect.top }, 'para:', { x: centerX, y: centerY });
+  
+  // Anima a mensagem saindo do carrinho
+  message.style.transition = 'all 1s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+  message.style.transform = `translate(${distX}px, ${distY}px) scale(1)`;
+  message.style.opacity = '1';
+  
+  // Após 3 segundos, anima de volta (para desaparecer)
+  setTimeout(() => {
+    message.style.transition = 'all 0.5s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+    message.style.transform = `translate(${distX}px, ${distY + 20}px) scale(0.8)`;
+    message.style.opacity = '0';
+    
+    // Remove a mensagem
+    setTimeout(() => {
+      message.remove();
+      console.log('✅ Mensagem removida');
+    }, 500);
+  }, 3000);
+}
+
+// =======================
+// 🎨 ANIMAÇÃO PRODUTO PARA CARRINHO
+// =======================
+function animateProductToCart(productImage, productName) {
+  console.log('🎬 Iniciando animação do produto para carrinho...');
+  
+  // Pega as coordenadas da imagem do produto (onde está agora)
+  const productRect = productImage.getBoundingClientRect();
+  console.log('📍 Posição do produto:', { top: productRect.top, left: productRect.left, width: productRect.width, height: productRect.height });
+  
+  // Pega as coordenadas do botão do carrinho
+  const cartButton = document.querySelector('button[onclick="window.toggleCart()"]');
+  if (!cartButton) {
+    console.error('❌ Botão do carrinho não encontrado');
+    return;
+  }
+  
+  const cartRect = cartButton.getBoundingClientRect();
+  console.log('🛒 Posição do carrinho:', { top: cartRect.top, left: cartRect.left, width: cartRect.width, height: cartRect.height });
+  
+  // Cria clone da imagem
+  const clone = productImage.cloneNode(true);
+  clone.id = 'flying-product-' + Date.now();
+  clone.style.position = 'fixed';
+  clone.style.width = productRect.width + 'px';
+  clone.style.height = productRect.height + 'px';
+  clone.style.top = productRect.top + 'px';
+  clone.style.left = productRect.left + 'px';
+  clone.style.zIndex = '9999';
+  clone.style.pointerEvents = 'none';
+  clone.style.borderRadius = '8px';
+  clone.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.3)';
+  clone.style.transformOrigin = 'center center';
+  
+  // Adiciona o clone ao documento
+  document.body.appendChild(clone);
+  
+  // Força reflow
+  clone.offsetHeight;
+  
+  // Calcula a distância a ser percorrida
+  const startCenterX = productRect.left + productRect.width / 2;
+  const startCenterY = productRect.top + productRect.height / 2;
+  
+  const cartCenterX = cartRect.left + cartRect.width / 2;
+  const cartCenterY = cartRect.top + cartRect.height / 2;
+  
+  const distX = cartCenterX - startCenterX;
+  const distY = cartCenterY - startCenterY;
+  
+  console.log('🚀 Distância a percorrer - X:', distX, 'Y:', distY);
+  
+  // Aplica a animação
+  clone.style.transition = 'all 2s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+  clone.style.transform = `translate(${distX}px, ${distY}px) scale(0.1)`;
+  clone.style.opacity = '0';
+  
+  console.log('✅ Animação iniciada');
+  
+  // Remove o clone após a animação e mostra mensagem de sucesso
+  setTimeout(() => {
+    clone.remove();
+    console.log('✅ Clone removido');
+    // Mostra a mensagem de sucesso
+    showSuccessMessage(productName);
+  }, 2000);
+}
+
 window.addToCart = () => {
   if (!selectedQuantity) return;
 
@@ -229,9 +359,79 @@ window.addToCart = () => {
     cart.push({ ...selectedProduct, quantity: selectedQuantity });
   }
 
+  // 🎨 Pega a imagem ANTES de fechar o modal
+  const productImg = document.getElementById('modalProductImage');
+  
+  // Salva a imagem em um clone antes de fechar o modal
+  let imgClone = null;
+  if (productImg && productImg.src) {
+    // Precisamos guardar as informações da imagem
+    const imgRect = productImg.getBoundingClientRect();
+    imgClone = {
+      src: productImg.src,
+      rect: {
+        top: imgRect.top,
+        left: imgRect.left,
+        width: imgRect.width,
+        height: imgRect.height
+      }
+    };
+  }
+
+  // Fecha o modal IMEDIATAMENTE
+  closeQuantityModal();
+  
+  // Aguarda um pequeno delay para o modal desaparecer
+  setTimeout(() => {
+    if (imgClone) {
+      console.log('🎨 Iniciando animação...');
+      // Recria a imagem para animar
+      const flyingImg = document.createElement('img');
+      flyingImg.src = imgClone.src;
+      flyingImg.style.position = 'fixed';
+      flyingImg.style.width = imgClone.rect.width + 'px';
+      flyingImg.style.height = imgClone.rect.height + 'px';
+      flyingImg.style.top = imgClone.rect.top + 'px';
+      flyingImg.style.left = imgClone.rect.left + 'px';
+      flyingImg.style.zIndex = '9999';
+      flyingImg.style.pointerEvents = 'none';
+      flyingImg.style.borderRadius = '8px';
+      flyingImg.style.boxShadow = '0 10px 30px rgba(0, 0, 0, 0.3)';
+      flyingImg.style.transformOrigin = 'center center';
+      
+      document.body.appendChild(flyingImg);
+      
+      // Força reflow
+      flyingImg.offsetHeight;
+      
+      // Calcula distância até o carrinho
+      const cartButton = document.querySelector('button[onclick="window.toggleCart()"]');
+      if (cartButton) {
+        const cartRect = cartButton.getBoundingClientRect();
+        const startCenterX = imgClone.rect.left + imgClone.rect.width / 2;
+        const startCenterY = imgClone.rect.top + imgClone.rect.height / 2;
+        const cartCenterX = cartRect.left + cartRect.width / 2;
+        const cartCenterY = cartRect.top + cartRect.height / 2;
+        
+        const distX = cartCenterX - startCenterX;
+        const distY = cartCenterY - startCenterY;
+        
+        // Anima
+        flyingImg.style.transition = 'all 2s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+        flyingImg.style.transform = `translate(${distX}px, ${distY}px) scale(0.1)`;
+        flyingImg.style.opacity = '0';
+        
+        // Após a animação terminar, mostra mensagem de sucesso
+        setTimeout(() => {
+          flyingImg.remove();
+          showSuccessMessage(selectedProduct.name);
+        }, 2000);
+      }
+    }
+  }, 100);
+
   saveCart();
   updateCartUI();
-  closeQuantityModal();
 };
 
 window.toggleCart = () =>
@@ -452,13 +652,48 @@ function iniciarPollingPix(id) {
         '<p class="text-center text-green-600 font-bold text-xl">✅ Pagamento aprovado!</p>';
       clearInterval(pixInterval);
       
+      // 💾 Salvar pedido com status de pagamento "pago" para PIX
+      const total = cart.reduce((sum, i) => sum + i.price * i.quantity, 0) +
+        (deliveryType === 'delivery' ? 3 : 0);
+      
+      const pedidoCompleto = {
+        id: Date.now(),
+        timestamp: new Date().toLocaleString('pt-BR'),
+        customer_name: document.getElementById('deliveryName').value,
+        customer_phone: document.getElementById('deliveryPhone').value,
+        address: document.getElementById('deliveryAddress').value,
+        bloco: document.getElementById('deliveryBloco').value,
+        apto: document.getElementById('deliveryApto').value,
+        delivery_type: deliveryType,
+        payment_method: 'PIX',
+        payment_status: 'pago', // PIX já foi pago!
+        payment_id: data.id, // ID do pagamento PIX para referência
+        items: cart.map(i => ({
+          id: i.id,
+          name: i.name,
+          quantity: i.quantity,
+          price: i.price,
+          unit: i.unit
+        })),
+        total
+      };
+      
+      const orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
+      orders.push(pedidoCompleto);
+      localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
+      
+      // Disparar evento de sincronização
+      window.dispatchEvent(new CustomEvent('pedidoAdicionado', { detail: pedidoCompleto }));
+      
       localStorage.removeItem('hortifruti_cart');
       localStorage.removeItem('paymentId');
       localStorage.removeItem('pixData');
+      cart = [];
+      updateCartUI();
       
       setTimeout(() => {
         closePixModal();
-        alert('✅ Seu pedido foi realizado com sucesso!');
+        alert('✅ Seu pedido foi realizado com sucesso!\n\nPagamento confirmado via PIX!');
       }, 3000);
     }
   }, 2000);
@@ -469,20 +704,76 @@ window.closePixModal = () => {
   document.getElementById('pixModal').classList.add('hidden');
 };
 
-window.cancelarCompra = () => {
-  if (confirm('❓ Tem certeza que deseja cancelar a compra?\n\nO carrinho será mantido para você continuar depois.')) {
+window.showCancelModal = () => {
+  console.log('🔴 Modal cancelarCompra aberto');
+  document.getElementById('cancelConfirmModal').classList.remove('hidden');
+};
+
+window.closeCancelModal = (confirmed) => {
+  document.getElementById('cancelConfirmModal').classList.add('hidden');
+  
+  if (confirmed) {
+    console.log('✅ Usuário confirmou cancelamento');
     // Fechar modal PIX
-    window.closePixModal();
+    const pixModal = document.getElementById('pixModal');
+    if (pixModal) {
+      pixModal.classList.add('hidden');
+      console.log('✅ Modal PIX fechado');
+    }
     // Fechar modal de delivery
-    window.closeDeliveryModal();
-    // Mostrar mensagem
-    alert('✅ Compra cancelada! Seu carrinho foi mantido.');
+    const deliveryModal = document.getElementById('deliveryModal');
+    if (deliveryModal) {
+      deliveryModal.classList.add('hidden');
+      console.log('✅ Modal Delivery fechado');
+    }
+    // Parar polling do PIX
+    if (pixInterval) clearInterval(pixInterval);
     console.log('❌ Compra cancelada pelo cliente');
+  } else {
+    console.log('❌ Usuário cancelou a ação');
   }
 };
 
+window.cancelarCompra = () => {
+  window.showCancelModal();
+};
+
+// =======================
+// ⏰ STATUS DO ESTABELECIMENTO
+// =======================
+function atualizarStatusLoja() {
+  const agora = new Date();
+  const hora = agora.getHours();
+  const minuto = agora.getMinutes();
+  const horaAtual = hora + minuto / 60;
+  
+  const statusElement = document.getElementById('storeStatus');
+  const horaAbertura = 8; // 08:00
+  const horaFechamento = 19; // 19:00
+  
+  const estaAberto = horaAtual >= horaAbertura && horaAtual < horaFechamento;
+  
+  if (estaAberto) {
+    statusElement.classList.remove('status-closed');
+    statusElement.classList.add('status-open');
+    statusElement.innerHTML = '<span class="status-dot"></span><span>Aberto agora</span>';
+    console.log(`✅ Loja aberta (${hora}:${String(minuto).padStart(2, '0')})`);
+  } else {
+    statusElement.classList.remove('status-open');
+    statusElement.classList.add('status-closed');
+    statusElement.innerHTML = '<span class="status-dot"></span><span>Fechado agora</span>';
+    console.log(`🔴 Loja fechada (${hora}:${String(minuto).padStart(2, '0')})`);
+  }
+}
+
 // 🔁 Persistência ao carregar página (IGUAL PROJETO TESTE)
 window.addEventListener('DOMContentLoaded', async () => {
+  // ⏰ Atualizar status da loja ao carregar
+  atualizarStatusLoja();
+  
+  // 🔄 Atualizar status a cada minuto
+  setInterval(atualizarStatusLoja, 60000);
+  
   const paymentId = localStorage.getItem('paymentId');
   const pixData = localStorage.getItem('pixData');
   
@@ -562,10 +853,34 @@ async function processPaymentOnDelivery() {
     console.error('❌ Erro ao enviar pedido:', error);
   }
 
-  // Salvar pedido no localStorage como fallback
+  // Salvar pedido no localStorage com status de pagamento
+  const pedidoCompleto = {
+    id: Date.now(), // ID único do pedido
+    timestamp: new Date().toLocaleString('pt-BR'),
+    customer_name: deliveryInfo.name,
+    customer_phone: deliveryInfo.phone,
+    address: deliveryInfo.address,
+    bloco: deliveryInfo.bloco,
+    apto: deliveryInfo.apto,
+    delivery_type: deliveryType,
+    payment_method: deliveryInfo.paymentMethod,
+    payment_status: 'pendente', // Será 'pendente' até ser marcado como pago
+    items: cart.map(i => ({
+      id: i.id,
+      name: i.name,
+      quantity: i.quantity,
+      price: i.price,
+      unit: i.unit
+    })),
+    total
+  };
+  
   const orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
-  orders.push(orderData);
+  orders.push(pedidoCompleto);
   localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
+  
+  // Disparar evento de sincronização para admin
+  window.dispatchEvent(new CustomEvent('pedidoAdicionado', { detail: pedidoCompleto }));
 
   // Enviar para WhatsApp
   const message = `

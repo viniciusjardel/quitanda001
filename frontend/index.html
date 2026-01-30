@@ -141,7 +141,7 @@
                         </div>
                     </div>
                 </div>
-                <button onclick="window.toggleCart()" class="relative bg-white text-purple-600 px-6 py-3 rounded-full font-semibold hover:bg-purple-50 transition">
+                <button onclick="window.toggleCart()" class="relative z-[100] bg-white text-purple-600 px-6 py-3 rounded-full font-semibold hover:bg-purple-50 transition">
                     🛒 Carrinho
                     <span id="cartBadge" class="absolute -top-2 -right-2 bg-red-500 text-white w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold cart-badge hidden">0</span>
                 </button>
@@ -155,7 +155,7 @@
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center md:text-left">
                 <div class="flex items-center justify-center md:justify-start gap-2">
                     <span class="text-2xl">📍</span>
-                    <p class="text-sm text-purple-900">Av. General Manoel Rabelo, 1725 - Jabotão</p>
+                    <p class="text-sm text-purple-900">Av. General Manoel Rabelo, 1725 - Jaboatão dos Guararapes</p>
                 </div>
                 <div class="flex items-center justify-center md:justify-start gap-2">
                     <span class="text-2xl">🕐</span>
@@ -233,7 +233,7 @@
     </div>
 
     <!-- Quantity Modal -->
-    <div id="quantityModal" class="modal fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4">
+    <div id="quantityModal" class="modal fixed inset-0 bg-black bg-opacity-50 hidden items-center justify-center z-50 p-4 modal-backdrop">
         <div class="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 transform transition-all">
             <div class="flex justify-between items-center mb-6">
                 <h3 class="text-2xl font-bold text-gray-800" id="modalProductName"></h3>
@@ -523,6 +523,25 @@
         
         console.log('\n%c═══════════════════════════════════════', 'color: #10b981; font-weight: bold;');
     </script>
+
+    <!-- Modal Estilizado de Confirmação de Cancelamento -->
+    <div id="cancelConfirmModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-[9999] hidden">
+        <div class="bg-white rounded-2xl shadow-2xl w-96 max-w-[90%] animate-in fade-in zoom-in-95 duration-300">
+            <div class="p-8 text-center">
+                <div class="text-5xl mb-4 animate-bounce">?️</div>
+                <h2 class="text-2xl font-bold text-gray-800 mb-2">Tem certeza?</h2>
+                <p class="text-gray-600 mb-6 leading-relaxed">O carrinho será mantido para você continuar depois.</p>
+                <div class="flex gap-3">
+                    <button onclick="window.closeCancelModal(false)" class="flex-1 px-4 py-3 bg-gray-200 text-gray-800 rounded-lg font-semibold hover:bg-gray-300 transition transform hover:-translate-y-0.5">
+                        Manter Compra
+                    </button>
+                    <button onclick="window.closeCancelModal(true)" class="flex-1 px-4 py-3 bg-red-500 text-white rounded-lg font-semibold hover:bg-red-600 transition transform hover:-translate-y-0.5 shadow-lg">
+                        Cancelar Compra
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <script src="script-site.js"></script>
 </body>
