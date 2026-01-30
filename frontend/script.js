@@ -452,6 +452,7 @@ function renderPedidos(pedidos) {
     if (pedidos.length === 0) {
         console.log('%c📭 Nenhum pedido encontrado', 'color: orange;');
         list.innerHTML = '<p class="text-center text-gray-500 py-8">Nenhum pedido encontrado</p>';
+        console.log('%c✅ HTML dos pedidos vazios renderizado na tela!', 'color: green; font-weight: bold;');
         return;
     }
 
@@ -493,6 +494,7 @@ function renderPedidos(pedidos) {
         </div>
     `}).join('');
     
+    console.log('%c✅ HTML gerado:', 'color: green; font-weight: bold;', `${list.innerHTML.length} caracteres`);
     console.log('%c✅ HTML dos pedidos renderizado na tela!', 'color: green; font-weight: bold;');
 }
 
