@@ -599,32 +599,38 @@ window.abrirPedidoModal = function(id) {
     
     if (modal) {
         console.log('%c🔄 Classes do modal antes:', 'color: purple;', modal.className);
-        console.log('%c📊 getBoundingClientRect antes:', 'color: purple;', modal.getBoundingClientRect());
         
+        // REMOVER CLASSE HIDDEN
         modal.classList.remove('hidden');
         
-        // TESTE VISUAL: Adicionar fundo vermelho temporariamente
-        modal.style.backgroundColor = 'rgba(255, 0, 0, 0.8)';
+        // APLICAR CSS DIRETO (porque Tailwind não está funcionando)
+        modal.style.position = 'fixed';
+        modal.style.top = '0';
+        modal.style.left = '0';
+        modal.style.right = '0';
+        modal.style.bottom = '0';
+        modal.style.width = '100%';
+        modal.style.height = '100%';
+        modal.style.display = 'flex';
+        modal.style.alignItems = 'center';
+        modal.style.justifyContent = 'center';
+        modal.style.zIndex = '9999';
+        modal.style.backgroundColor = 'rgba(0, 0, 0, 0.7)';
+        modal.style.padding = '1rem';
         
         console.log('%c🔄 Classes do modal depois:', 'color: purple;', modal.className);
         console.log('%c📊 getBoundingClientRect depois:', 'color: purple;', modal.getBoundingClientRect());
-        console.log('%c📊 getComputedStyle display:', 'color: purple;', window.getComputedStyle(modal).display);
-        console.log('%c📊 getComputedStyle backgroundColor:', 'color: purple;', window.getComputedStyle(modal).backgroundColor);
-        
-        // TESTE: Scroll para garantir que o modal está visível
-        setTimeout(() => {
-            modal.scrollIntoView({behavior: 'smooth', block: 'center'});
-            console.log('%c✅ scrollIntoView chamado', 'color: green;');
-        }, 100);
-        
-        console.log('%c✅ MODAL DEVE ESTAR VISÍVEL AGORA COM FUNDO VERMELHO!', 'color: green; font-weight: bold; font-size: 14px;');
+        console.log('%c✅ MODAL DEVE ESTAR VISÍVEL AGORA!', 'color: green; font-weight: bold; font-size: 14px;');
     } else {
         console.error('%c❌ ERRO CRÍTICO: Modal não encontrado no DOM!', 'color: red; font-weight: bold;');
     }
 };
 
 function closePedidoModal() {
-    document.getElementById('pedidoModal').classList.add('hidden');
+    const modal = document.getElementById('pedidoModal');
+    modal.classList.add('hidden');
+    // Remover estilos inline para deixar o hidden do CSS funcionar
+    modal.style.display = 'none';
     currentPedidoId = null;
 }
 
