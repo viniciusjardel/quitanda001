@@ -679,4 +679,15 @@ window.addEventListener('pedidoAdicionado', (event) => {
 console.log('%c🔄 INICIALIZANDO PAINEL...', 'color: orange; font-weight: bold;');
 loadData();
 loadPedidos();
+
+// ✨ Verificar se deve abrir aba de pedidos automaticamente
+const params = new URLSearchParams(window.location.search);
+const tabFromUrl = params.get('tab');
+if (tabFromUrl === 'pedidos') {
+    console.log('%c📋 Abrindo aba de pedidos automaticamente...', 'color: green; font-weight: bold;');
+    setTimeout(() => {
+        window.showTab('pedidos');
+    }, 500);
+}
+
 console.log('%c✨ PAINEL PRONTO!', 'color: green; font-weight: bold; font-size: 14px;');

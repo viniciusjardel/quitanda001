@@ -557,6 +557,11 @@ window.openSuccessOrderModal = (orderId, message) => {
   document.getElementById('successOrderId').textContent = orderId;
   document.getElementById('successMessage').textContent = message;
   document.getElementById('successOrderModal').classList.remove('hidden');
+  
+  // ✨ Redirecionar para admin após 5 segundos
+  setTimeout(() => {
+    window.location.href = 'admin.html?tab=pedidos';
+  }, 5000);
 };
 
 window.closeSuccessOrderModal = () => {
