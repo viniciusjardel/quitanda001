@@ -1,56 +1,71 @@
 import express from 'express';
 import cors from 'cors';
-import Database from 'better-sqlite3';
-import path from 'path';
-import { fileURLToPath } from 'url';
+import pkg from 'pg';
+import dotenv from 'dotenv';
 
-const __dirname = path.dirname(fileURLToPath(import.meta.url));
+dotenv.config();
 
+const { Pool } = pkg;
 const app = express();
 app.use(cors());
 app.use(express.json({ limit: '50mb' }));
 
 // =======================
-// SQLite Database
+// PostgreSQL Database
 // =======================
-const db = new Database(path.join(__dirname, 'quitanda.db'));
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+});
 
-// Criar tabela se não existir
-db.exec(`
-  CREATE TABLE IF NOT EXISTS produtos (
-    id TEXT PRIMARY KEY,
-    name TEXT NOT NULL,
-    price REAL NOT NULL,
-    image TEXT,
-    category TEXT,
-    unit TEXT NOT NULL,
-    color TEXT,
-    description TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
+pool.on('error', (err) => {
+  console.error('❌ Erro na conexão com PostgreSQL:', err);
+});
 
-  CREATE TABLE IF NOT EXISTS pedidos (
-    id TEXT PRIMARY KEY,
-    customer_name TEXT NOT NULL,
-    customer_phone TEXT NOT NULL,
-    address TEXT NOT NULL,
-    bloco TEXT,
-    apto TEXT,
-    delivery_type TEXT NOT NULL,
-    payment_method TEXT NOT NULL,
-    payment_status TEXT DEFAULT 'pendente',
-    payment_id TEXT,
-    items TEXT NOT NULL,
-    total REAL NOT NULL,
-    status TEXT DEFAULT 'pendente',
-    notes TEXT,
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  )
-`);
+// Criar tabelas se não existirem
+async function initializeTables() {
+  try {
+    await pool.query(`
+      CREATE TABLE IF NOT EXISTS produtos (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        price DECIMAL(10, 2) NOT NULL,
+        image TEXT,
+        category TEXT,
+        unit TEXT NOT NULL,
+        color TEXT,
+        description TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
 
-console.log('✅ Banco de dados inicializado');
+      CREATE TABLE IF NOT EXISTS pedidos (
+        id TEXT PRIMARY KEY,
+        customer_name TEXT NOT NULL,
+        customer_phone TEXT NOT NULL,
+        address TEXT NOT NULL,
+        bloco TEXT,
+        apto TEXT,
+        delivery_type TEXT NOT NULL,
+        payment_method TEXT NOT NULL,
+        payment_status TEXT DEFAULT 'pendente',
+        payment_id TEXT,
+        items TEXT NOT NULL,
+        total DECIMAL(10, 2) NOT NULL,
+        status TEXT DEFAULT 'pendente',
+        notes TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      );
+    `);
+    console.log('✅ Tabelas do banco de dados inicializadas');
+  } catch (error) {
+    console.error('❌ Erro ao criar tabelas:', error);
+  }
+}
+
+// Inicializar tabelas
+await initializeTables();
 
 // =======================
 // Health Check
@@ -66,10 +81,10 @@ app.get('/', (req, res) => {
 // =======================
 // GET todos os produtos
 // =======================
-app.get('/produtos', (req, res) => {
+app.get('/produtos', async (req, res) => {
   try {
-    const stmt = db.prepare('SELECT * FROM produtos ORDER BY created_at DESC');
-    const produtos = stmt.all();
+    const result = await pool.query('SELECT * FROM produtos ORDER BY created_at DESC');
+    const produtos = result.rows;
     console.log(`📦 GET /produtos: ${produtos.length} produtos`);
     res.json(produtos);
   } catch (error) {
@@ -81,11 +96,11 @@ app.get('/produtos', (req, res) => {
 // =======================
 // GET um produto específico
 // =======================
-app.get('/produtos/:id', (req, res) => {
+app.get('/produtos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const stmt = db.prepare('SELECT * FROM produtos WHERE id = ?');
-    const produto = stmt.get(id);
+    const result = await pool.query('SELECT * FROM produtos WHERE id = $1', [id]);
+    const produto = result.rows[0];
     
     if (!produto) {
       return res.status(404).json({ error: 'Produto não encontrado' });
@@ -101,7 +116,7 @@ app.get('/produtos/:id', (req, res) => {
 // =======================
 // POST novo produto
 // =======================
-app.post('/produtos', (req, res) => {
+app.post('/produtos', async (req, res) => {
   try {
     const { id, name, price, image, category, unit, color, description } = req.body;
 
@@ -112,12 +127,11 @@ app.post('/produtos', (req, res) => {
       });
     }
 
-    const stmt = db.prepare(`
-      INSERT INTO produtos (id, name, price, image, category, unit, color, description)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-
-    stmt.run(id, name, price, image || null, category || null, unit, color || null, description || null);
+    await pool.query(
+      `INSERT INTO produtos (id, name, price, image, category, unit, color, description)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8)`,
+      [id, name, price, image || null, category || null, unit, color || null, description || null]
+    );
     
     console.log(`✅ Produto criado: ${name} (${id})`);
     res.status(201).json({ 
@@ -125,7 +139,7 @@ app.post('/produtos', (req, res) => {
       id: id
     });
   } catch (error) {
-    if (error.message.includes('UNIQUE constraint failed')) {
+    if (error.message.includes('duplicate key')) {
       return res.status(400).json({ error: 'Produto com este ID já existe' });
     }
     console.error('❌ Erro ao criar produto:', error);
@@ -136,24 +150,23 @@ app.post('/produtos', (req, res) => {
 // =======================
 // PUT atualizar produto
 // =======================
-app.put('/produtos/:id', (req, res) => {
+app.put('/produtos/:id', async (req, res) => {
   try {
     const { id } = req.params;
     const { name, price, image, category, unit, color, description } = req.body;
 
     // Verificar se produto existe
-    const verificar = db.prepare('SELECT id FROM produtos WHERE id = ?');
-    if (!verificar.get(id)) {
+    const verificar = await pool.query('SELECT id FROM produtos WHERE id = $1', [id]);
+    if (verificar.rows.length === 0) {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
 
-    const stmt = db.prepare(`
-      UPDATE produtos 
-      SET name = ?, price = ?, image = ?, category = ?, unit = ?, color = ?, description = ?, updated_at = CURRENT_TIMESTAMP
-      WHERE id = ?
-    `);
-
-    stmt.run(name || null, price || null, image || null, category || null, unit || null, color || null, description || null, id);
+    await pool.query(
+      `UPDATE produtos 
+       SET name = $1, price = $2, image = $3, category = $4, unit = $5, color = $6, description = $7, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $8`,
+      [name || null, price || null, image || null, category || null, unit || null, color || null, description || null, id]
+    );
     
     console.log(`✅ Produto atualizado: ${id}`);
     res.json({ 
@@ -169,18 +182,17 @@ app.put('/produtos/:id', (req, res) => {
 // =======================
 // DELETE produto
 // =======================
-app.delete('/produtos/:id', (req, res) => {
+app.delete('/produtos/:id', async (req, res) => {
   try {
     const { id } = req.params;
 
     // Verificar se produto existe
-    const verificar = db.prepare('SELECT id FROM produtos WHERE id = ?');
-    if (!verificar.get(id)) {
+    const verificar = await pool.query('SELECT id FROM produtos WHERE id = $1', [id]);
+    if (verificar.rows.length === 0) {
       return res.status(404).json({ error: 'Produto não encontrado' });
     }
 
-    const stmt = db.prepare('DELETE FROM produtos WHERE id = ?');
-    stmt.run(id);
+    await pool.query('DELETE FROM produtos WHERE id = $1', [id]);
     
     console.log(`✅ Produto deletado: ${id}`);
     res.json({ 
@@ -196,10 +208,9 @@ app.delete('/produtos/:id', (req, res) => {
 // =======================
 // DELETE todos os produtos (apenas para teste/reset)
 // =======================
-app.delete('/produtos', (req, res) => {
+app.delete('/produtos', async (req, res) => {
   try {
-    const stmt = db.prepare('DELETE FROM produtos');
-    stmt.run();
+    await pool.query('DELETE FROM produtos');
     console.log('✅ Todos os produtos foram deletados');
     res.json({ message: 'Todos os produtos deletados com sucesso' });
   } catch (error) {
@@ -213,10 +224,10 @@ app.delete('/produtos', (req, res) => {
 // =======================
 
 // GET todos os pedidos
-app.get('/pedidos', (req, res) => {
+app.get('/pedidos', async (req, res) => {
   try {
-    const stmt = db.prepare('SELECT * FROM pedidos ORDER BY created_at DESC');
-    const pedidos = stmt.all();
+    const result = await pool.query('SELECT * FROM pedidos ORDER BY created_at DESC');
+    const pedidos = result.rows;
     res.json(pedidos.map(p => ({
       ...p,
       items: JSON.parse(p.items)
@@ -228,10 +239,10 @@ app.get('/pedidos', (req, res) => {
 });
 
 // GET um pedido específico
-app.get('/pedidos/:id', (req, res) => {
+app.get('/pedidos/:id', async (req, res) => {
   try {
-    const stmt = db.prepare('SELECT * FROM pedidos WHERE id = ?');
-    const pedido = stmt.get(req.params.id);
+    const result = await pool.query('SELECT * FROM pedidos WHERE id = $1', [req.params.id]);
+    const pedido = result.rows[0];
     if (!pedido) return res.status(404).json({ error: 'Pedido não encontrado' });
     res.json({ ...pedido, items: JSON.parse(pedido.items) });
   } catch (error) {
@@ -240,7 +251,7 @@ app.get('/pedidos/:id', (req, res) => {
 });
 
 // POST novo pedido
-app.post('/pedidos', (req, res) => {
+app.post('/pedidos', async (req, res) => {
   try {
     const { customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, payment_status, payment_id, items, total } = req.body;
     
@@ -249,25 +260,11 @@ app.post('/pedidos', (req, res) => {
     }
 
     const id = 'ped_' + Date.now();
-    const stmt = db.prepare(`
-      INSERT INTO pedidos (id, customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, payment_status, payment_id, items, total, status)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
     
-    stmt.run(
-      id, 
-      customer_name, 
-      customer_phone, 
-      address, 
-      bloco || '', 
-      apto || '', 
-      delivery_type, 
-      payment_method, 
-      payment_status || 'pendente', 
-      payment_id || null,
-      JSON.stringify(items), 
-      total, 
-      'pendente'
+    await pool.query(
+      `INSERT INTO pedidos (id, customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, payment_status, payment_id, items, total, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
+      [id, customer_name, customer_phone, address, bloco || '', apto || '', delivery_type, payment_method, payment_status || 'pendente', payment_id || null, JSON.stringify(items), total, 'pendente']
     );
     
     console.log('✅ Pedido criado:', id);
@@ -279,31 +276,31 @@ app.post('/pedidos', (req, res) => {
 });
 
 // PUT atualizar pedido (status, notas, payment_status)
-app.put('/pedidos/:id', (req, res) => {
+app.put('/pedidos/:id', async (req, res) => {
   try {
     const { status, notes, payment_status } = req.body;
     
     let query = 'UPDATE pedidos SET updated_at = CURRENT_TIMESTAMP';
     const params = [];
+    let paramIndex = 1;
     
     if (status !== undefined) {
-      query += ', status = ?';
+      query += `, status = $${paramIndex++}`;
       params.push(status);
     }
     if (notes !== undefined) {
-      query += ', notes = ?';
+      query += `, notes = $${paramIndex++}`;
       params.push(notes);
     }
     if (payment_status !== undefined) {
-      query += ', payment_status = ?';
+      query += `, payment_status = $${paramIndex++}`;
       params.push(payment_status);
     }
     
-    query += ' WHERE id = ?';
+    query += ` WHERE id = $${paramIndex}`;
     params.push(req.params.id);
     
-    const stmt = db.prepare(query);
-    stmt.run(...params);
+    await pool.query(query, params);
     console.log('✅ Pedido atualizado:', req.params.id);
     res.json({ message: 'Pedido atualizado com sucesso' });
   } catch (error) {
@@ -313,10 +310,9 @@ app.put('/pedidos/:id', (req, res) => {
 });
 
 // DELETE pedido
-app.delete('/pedidos/:id', (req, res) => {
+app.delete('/pedidos/:id', async (req, res) => {
   try {
-    const stmt = db.prepare('DELETE FROM pedidos WHERE id = ?');
-    stmt.run(req.params.id);
+    await pool.query('DELETE FROM pedidos WHERE id = $1', [req.params.id]);
     console.log('✅ Pedido deletado:', req.params.id);
     res.json({ message: 'Pedido deletado com sucesso' });
   } catch (error) {
@@ -331,6 +327,7 @@ app.delete('/pedidos/:id', (req, res) => {
 const PORT = process.env.PORT || 3001;
 app.listen(PORT, () => {
   console.log(`🚀 Servidor rodando na porta ${PORT}`);
-  console.log(`📝 GET  http://localhost:${PORT}/produtos`);
+  console.log(`�️  Usando PostgreSQL (${process.env.DATABASE_URL ? 'Render' : 'Local'})`);
+  console.log(`�📝 GET  http://localhost:${PORT}/produtos`);
   console.log(`➕ POST http://localhost:${PORT}/produtos`);
 });
