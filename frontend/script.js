@@ -593,7 +593,18 @@ window.abrirPedidoModal = function(id) {
     document.getElementById('pedidoStatus').value = pedido.status;
     document.getElementById('pedidoNotes').value = pedido.notes || '';
     
-    document.getElementById('pedidoModal').classList.remove('hidden');
+    // ===== EXIBIR MODAL =====
+    const modal = document.getElementById('pedidoModal');
+    console.log('%c📍 Buscando modal:', 'color: purple;', modal ? '✅ Encontrado' : '❌ NÃO ENCONTRADO');
+    
+    if (modal) {
+        console.log('%c🔄 Classes do modal antes:', 'color: purple;', modal.className);
+        modal.classList.remove('hidden');
+        console.log('%c🔄 Classes do modal depois:', 'color: purple;', modal.className);
+        console.log('%c✅ MODAL DEVE ESTAR VISÍVEL AGORA!', 'color: green; font-weight: bold; font-size: 14px;');
+    } else {
+        console.error('%c❌ ERRO CRÍTICO: Modal não encontrado no DOM!', 'color: red; font-weight: bold;');
+    }
 };
 
 function closePedidoModal() {
@@ -792,6 +803,16 @@ window.addEventListener('pedidoAdicionado', (event) => {
 // INICIALIZAR
 // =======================
 console.log('%c🔄 INICIALIZANDO PAINEL...', 'color: orange; font-weight: bold;');
+
+// Verificar se o modal existe
+const modalTest = document.getElementById('pedidoModal');
+console.log('%c📍 Verificando elementos do DOM:', 'color: purple;');
+console.log('   - #pedidoModal:', modalTest ? '✅ Encontrado' : '❌ NÃO ENCONTRADO');
+console.log('   - #notaNumero:', document.getElementById('notaNumero') ? '✅' : '❌');
+console.log('   - #notaData:', document.getElementById('notaData') ? '✅' : '❌');
+console.log('   - #notaCliente:', document.getElementById('notaCliente') ? '✅' : '❌');
+console.log('   - #areaStatusPagamento:', document.getElementById('areaStatusPagamento') ? '✅' : '❌');
+
 loadData();
 loadPedidos();
 
