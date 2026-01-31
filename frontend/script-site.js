@@ -253,8 +253,23 @@ window.selectUnit = unit => {
   window.openQuantityModal(selectedProduct.id);
 };
 
-window.closeUnitModal = () =>
-  document.getElementById('unitModal').classList.add('hidden');
+window.closeUnitModal = () => {
+  const unitModal = document.getElementById('unitModal');
+  const modalContent = unitModal.querySelector('.bg-white');
+  
+  // Adiciona animação de saída
+  if (modalContent) {
+    modalContent.classList.add('modal-close-down');
+  }
+  
+  // Aguarda a animação terminar antes de realmente fechar
+  setTimeout(() => {
+    unitModal.classList.add('hidden');
+    if (modalContent) {
+      modalContent.classList.remove('modal-close-down');
+    }
+  }, 400); // Tempo da animação em ms
+};
 
 // =======================
 // MODAL QUANTIDADE
@@ -280,11 +295,26 @@ window.openQuantityModal = id => {
 };
 
 window.closeQuantityModal = () => {
-  document.getElementById('quantityModal').classList.add('hidden');
-  // Voltar ao modal anterior (unitModal) se houver múltiplas unidades
-  if (selectedProduct && selectedProduct.units && selectedProduct.units.length > 1) {
-    document.getElementById('unitModal').classList.remove('hidden');
+  const quantityModal = document.getElementById('quantityModal');
+  const modalContent = quantityModal.querySelector('.bg-white');
+  
+  // Adiciona animação de saída
+  if (modalContent) {
+    modalContent.classList.add('modal-close-down');
   }
+  
+  // Aguarda a animação terminar antes de realmente fechar
+  setTimeout(() => {
+    quantityModal.classList.add('hidden');
+    if (modalContent) {
+      modalContent.classList.remove('modal-close-down');
+    }
+    
+    // Voltar ao modal anterior (unitModal) se houver múltiplas unidades
+    if (selectedProduct && selectedProduct.units && selectedProduct.units.length > 1) {
+      document.getElementById('unitModal').classList.remove('hidden');
+    }
+  }, 400); // Tempo da animação em ms
 };
 
 window.increaseModalQuantity = () => updateQuantity(selectedQuantity + 1);
