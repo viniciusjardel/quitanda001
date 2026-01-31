@@ -212,7 +212,7 @@ function renderProducts(list) {
 
     card.innerHTML = `
       <img src="${product.image}" class="h-48 w-full object-cover rounded-lg mb-3">
-      <div class="flex gap-1 mb-3 justify-end">
+      <div style="display: flex; gap: 6px; margin-bottom: 12px; justify-content: flex-end;">
         ${unitsHTML}
       </div>
       <h3 class="text-xl font-bold text-gray-800">${product.name}</h3>
