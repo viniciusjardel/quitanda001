@@ -259,6 +259,9 @@ function editProduct(id) {
     
     updateUnitsDisplay();
     
+    // Carregar categoria
+    document.getElementById('productCategory').value = product.category || '';
+    
     document.getElementById('imagePreview').classList.remove('hidden');
     document.getElementById('previewImg').src = product.image;
     
@@ -368,6 +371,7 @@ async function saveProduct(e) {
         id: editingProductId || 'prod_' + Date.now(),
         name: productName,
         description: document.getElementById('productDescription').value,
+        category: document.getElementById('productCategory').value || null,
         price: parseFloat(productPrice), // Garantir que é número
         unit: selectedUnits[0], // Manter compatibilidade com sistemas antigos
         units: selectedUnits,   // Nova estrutura com múltiplas unidades
