@@ -370,14 +370,16 @@ app.get('/pedidos/:id', async (req, res) => {
 // POST novo pedido
 app.post('/pedidos', async (req, res) => {
   try {
-    const { customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, payment_status, payment_id, items, total } = req.body;
+    const { id, customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, payment_status, payment_id, items, total } = req.body;
     
-    if (!customer_name || !customer_phone || !items || !total) {
-      return res.status(400).json({ error: 'Dados obrigatórios faltando: customer_name, customer_phone, items, total' });
+    if (!id || !customer_name || !customer_phone || !items || !total) {
+      return res.status(400).json({ error: 'Dados obrigatórios faltando: id, customer_name, customer_phone, items, total' });
     }
 
-    const id = 'ped_' + Date.now();
+    // USAR o ID fornecido pelo frontend, não gerar um novo!
     const finalAddress = address || 'Retirada no local'; // Se vazio, usa padrão
+    
+    console.log('📝 Recebendo pedido com ID:', id);
     
     await pool.query(
       `INSERT INTO pedidos (id, customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, payment_status, payment_id, items, total, status)
@@ -385,7 +387,7 @@ app.post('/pedidos', async (req, res) => {
       [id, customer_name, customer_phone, finalAddress, bloco || '', apto || '', delivery_type, payment_method, payment_status || 'pendente', payment_id || null, JSON.stringify(items), total, 'pendente']
     );
     
-    console.log('✅ Pedido criado:', id);
+    console.log('✅ Pedido criado com ID:', id);
     res.status(201).json({ id, message: 'Pedido criado com sucesso' });
   } catch (error) {
     console.error('❌ Erro ao criar pedido:', error);
