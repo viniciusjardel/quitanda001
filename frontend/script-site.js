@@ -77,6 +77,7 @@ const getStoredProducts = () =>
 async function salvarPedidoNoBackend(pedido) {
   try {
     console.log('%c💾 Enviando pedido para backend...', 'color: blue; font-weight: bold;');
+    console.log('📋 Dados do pedido:', JSON.stringify(pedido, null, 2));
     
     const response = await fetch(`${PRODUCTS_API_URL}/pedidos`, {
       method: 'POST',
@@ -85,7 +86,8 @@ async function salvarPedidoNoBackend(pedido) {
     });
 
     if (!response.ok) {
-      throw new Error(`Erro ${response.status}: ${response.statusText}`);
+      const errorData = await response.json().catch(() => ({}));
+      throw new Error(`Erro ${response.status}: ${errorData.details || response.statusText}`);
     }
 
     const data = await response.json();
@@ -97,7 +99,7 @@ async function salvarPedidoNoBackend(pedido) {
     return data;
   } catch (error) {
     console.error('%c❌ ERRO CRÍTICO ao salvar pedido no backend:', 'color: red; font-weight: bold;', error);
-    alert('❌ ERRO: Não foi possível salvar o pedido no banco de dados. Verifique sua conexão com a internet.');
+    alert('❌ ERRO: Não foi possível salvar o pedido no banco de dados.\n\nDetalhes: ' + error.message);
     throw error; // Re-throw para não continuar o fluxo
   }
 }

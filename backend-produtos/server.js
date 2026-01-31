@@ -372,7 +372,10 @@ app.post('/pedidos', async (req, res) => {
   try {
     const { id, customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, payment_status, payment_id, items, total } = req.body;
     
+    console.log('📨 Body recebido:', { id, customer_name, customer_phone, address, delivery_type, payment_method, items: items?.length, total });
+    
     if (!id || !customer_name || !customer_phone || !items || !total) {
+      console.error('❌ Faltam dados obrigatórios:', { id: !!id, customer_name: !!customer_name, customer_phone: !!customer_phone, items: !!items, total: !!total });
       return res.status(400).json({ error: 'Dados obrigatórios faltando: id, customer_name, customer_phone, items, total' });
     }
 
@@ -390,8 +393,9 @@ app.post('/pedidos', async (req, res) => {
     console.log('✅ Pedido criado com ID:', id);
     res.status(201).json({ id, message: 'Pedido criado com sucesso' });
   } catch (error) {
-    console.error('❌ Erro ao criar pedido:', error);
-    res.status(500).json({ error: 'Erro ao criar pedido' });
+    console.error('❌ Erro ao criar pedido:', error.message || error);
+    console.error('Stack trace:', error.stack);
+    res.status(500).json({ error: 'Erro ao criar pedido', details: error.message });
   }
 });
 
