@@ -150,7 +150,31 @@ async function fetchProductsFromAPI() {
   try {
     const response = await fetch(`${PRODUCTS_API_URL}/produtos`);
     if (!response.ok) throw new Error(`Erro ${response.status}: ${response.statusText}`);
-    const data = await response.json();
+    let data = await response.json();
+    
+    // Processar units para garantir que seja sempre um array
+    data = data.map(product => {
+      if (product.units) {
+        // Se units for string JSON, fazer parse
+        if (typeof product.units === 'string') {
+          try {
+            product.units = JSON.parse(product.units);
+          } catch (e) {
+            // Se não conseguir fazer parse, deixar como array com a string
+            product.units = [product.units];
+          }
+        }
+        // Garantir que é um array
+        if (!Array.isArray(product.units)) {
+          product.units = [product.units];
+        }
+      } else {
+        // Se não tiver units, usar unit como fallback
+        product.units = [product.unit];
+      }
+      return product;
+    });
+    
     console.log('✅ Produtos carregados da API:', data.length);
     return data;
   } catch (error) {
@@ -180,10 +204,19 @@ function renderProducts(list) {
 
   list.forEach(product => {
     const card = document.createElement('div');
-    card.className = 'product-card bg-white rounded-xl shadow-lg p-4 flex flex-col';
+    card.className = 'product-card bg-white rounded-xl shadow-lg p-4 flex flex-col relative';
+
+    // Obter unidades (pode ser array ou string)
+    const units = Array.isArray(product.units) ? product.units : [product.unit];
+    const unitsHTML = units.map(u => `<span class="unit-badge">${u.toUpperCase()}</span>`).join('');
 
     card.innerHTML = `
-      <img src="${product.image}" class="h-48 w-full object-cover rounded-lg mb-4">
+      <div class="relative">
+        <img src="${product.image}" class="h-48 w-full object-cover rounded-lg mb-4">
+        <div class="absolute bottom-2 right-2 flex flex-wrap gap-1 justify-end max-w-[90%]">
+          ${unitsHTML}
+        </div>
+      </div>
       <h3 class="text-xl font-bold text-gray-800">${product.name}</h3>
       <p class="text-gray-500 text-sm mb-2">${product.description || ''}</p>
       <p class="text-lg font-bold text-green-600 mb-4">${formatPrice(product.price)} / ${product.unit.toUpperCase()}</p>
