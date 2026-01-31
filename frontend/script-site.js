@@ -203,26 +203,26 @@ function renderProducts(list) {
   empty.classList.add('hidden');
 
   list.forEach(product => {
-    const card = document.createElement('div');
-    card.className = 'product-card bg-white rounded-xl shadow-lg p-4 flex flex-col';
+  const card = document.createElement('div');
+    card.className = 'product-card bg-white rounded-xl shadow-lg p-3 sm:p-4 flex flex-col';
 
     // Obter unidades (pode ser array ou string)
     const units = Array.isArray(product.units) ? product.units : [product.unit];
     const unitsHTML = units.map(u => 
-      `<span style="display: inline-flex; align-items: center; background-color: #10b981; color: white; padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.6px; white-space: nowrap; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);">${u.toUpperCase()}</span>`
+      `<span style="display: inline-flex; align-items: center; background-color: #10b981; color: white; padding: 4px 10px; border-radius: 20px; font-size: 9px; sm_font-size: 11px; font-weight: 700; letter-spacing: 0.6px; white-space: nowrap; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);">${u.toUpperCase()}</span>`
     ).join('');
 
     card.innerHTML = `
-      <img src="${product.image}" class="h-48 w-full object-cover rounded-lg mb-3">
-      <h3 class="text-xl font-bold text-gray-800">${product.name}</h3>
-      <p class="text-gray-500 text-sm mb-3">${product.description || ''}</p>
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;">
-        <p class="text-lg font-bold text-green-600">${formatPrice(product.price)} / ${product.unit.toUpperCase()}</p>
-        <div style="display: flex; gap: 6px;">
+      <img src="${product.image}" class="h-36 sm:h-48 w-full object-cover rounded-lg mb-2 sm:mb-3">
+      <h3 class="text-lg sm:text-xl font-bold text-gray-800 line-clamp-2">${product.name}</h3>
+      <p class="text-gray-500 text-xs sm:text-sm mb-2 sm:mb-3 line-clamp-2">${product.description || ''}</p>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
+        <p class="text-base sm:text-lg font-bold text-green-600">${formatPrice(product.price)} / ${product.unit.toUpperCase()}</p>
+        <div style="display: flex; gap: 4px; flex-wrap: wrap;">
           ${unitsHTML}
         </div>
       </div>
-      <button class="mt-auto py-3 rounded-lg text-white font-bold"
+      <button class="mt-auto py-2 sm:py-3 rounded-lg text-white font-bold text-sm sm:text-base"
         style="background:${product.color || '#7c3aed'}"
         onclick="window.openProductSelection('${product.id}')">
         Adicionar
@@ -664,22 +664,22 @@ function updateCartUI() {
     const displayUnit = (item.selectedUnit || item.unit || 'un').toUpperCase();
 
     items.innerHTML += `
-      <div class="flex justify-between items-center mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-center mb-3 sm:mb-4 p-3 sm:p-4 bg-gray-50 rounded-lg border border-gray-200 gap-3">
         <div class="flex-1">
-          <strong>${item.name}</strong><br>
-          <span class="text-gray-600">${formatPrice(item.price)} / ${displayUnit}</span>
+          <strong class="block text-sm sm:text-base">${item.name}</strong><br>
+          <span class="text-xs sm:text-sm text-gray-600">${formatPrice(item.price)} / ${displayUnit}</span>
         </div>
         
-        <div class="flex items-center gap-3">
+        <div class="flex items-center gap-2 sm:gap-3 flex-wrap">
           <div class="flex items-center border border-gray-300 rounded-lg">
-            <button onclick="window.decreaseQuantity(${index})" class="px-3 py-2 text-red-600 font-bold hover:bg-red-50">−</button>
-            <span class="px-4 py-2 font-bold text-center min-w-12">${item.quantity}</span>
-            <button onclick="window.increaseQuantity(${index})" class="px-3 py-2 text-green-600 font-bold hover:bg-green-50">+</button>
+            <button onclick="window.decreaseQuantity(${index})" class="px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm text-red-600 font-bold hover:bg-red-50">−</button>
+            <span class="px-2 sm:px-4 py-1 sm:py-2 font-bold text-center text-xs sm:text-sm min-w-10 sm:min-w-12">${item.quantity}</span>
+            <button onclick="window.increaseQuantity(${index})" class="px-2 sm:px-3 py-1 sm:py-2 text-xs sm:text-sm text-green-600 font-bold hover:bg-green-50">+</button>
           </div>
           
-          <span class="font-bold text-green-600 min-w-24 text-right">${formatPrice(subtotal)}</span>
+          <span class="font-bold text-green-600 min-w-20 sm:min-w-24 text-right text-sm sm:text-base">${formatPrice(subtotal)}</span>
           
-          <button onclick="window.removeFromCart(${index})" class="px-3 py-2 text-red-600 hover:bg-red-100 rounded-lg transition" title="Remover">
+          <button onclick="window.removeFromCart(${index})" class="px-2 sm:px-3 py-1 sm:py-2 text-red-600 hover:bg-red-100 rounded-lg transition text-sm sm:text-base" title="Remover">
             🗑️
           </button>
         </div>

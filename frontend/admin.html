@@ -63,15 +63,15 @@
     <!-- Header -->
     <header class="gradient-bg text-white shadow-lg">
         <div class="container mx-auto px-4 py-4">
-            <div class="flex items-center justify-between">
-                <div class="flex items-center gap-4">
-                    <img src="img/logotipo quitanda villa natal.png" alt="Logo Hortifruti Vila Natal" class="w-24 h-24 rounded-full shadow-lg">
+            <div class="flex flex-col sm:flex-row items-center sm:justify-between gap-4">
+                <div class="flex items-center gap-2 sm:gap-4">
+                    <img src="img/logotipo quitanda villa natal.png" alt="Logo Hortifruti Vila Natal" class="w-16 sm:w-24 h-16 sm:h-24 rounded-full shadow-lg">
                     <div>
-                        <h1 class="text-2xl md:text-3xl font-bold">Painel Administrativo</h1>
-                        <p class="text-sm opacity-90">Hortifruti Vila Natal</p>
+                        <h1 class="text-xl sm:text-2xl md:text-3xl font-bold">Painel Administrativo</h1>
+                        <p class="text-xs sm:text-sm opacity-90">Hortifruti Vila Natal</p>
                     </div>
                 </div>
-                <a href="index.html" target="_blank" class="bg-white text-purple-600 px-6 py-3 rounded-lg font-semibold hover:bg-purple-50 transition">
+                <a href="index.html" target="_blank" class="bg-white text-purple-600 px-4 sm:px-6 py-2 sm:py-3 rounded-lg font-semibold text-sm sm:text-base hover:bg-purple-50 transition whitespace-nowrap">
                     🌐 Ver Site
                 </a>
             </div>
@@ -79,13 +79,13 @@
     </header>
 
     <!-- Navigation Tabs -->
-    <div class="bg-white shadow-md">
+    <div class="bg-white shadow-md overflow-x-auto">
         <div class="container mx-auto px-4">
-            <div class="flex gap-2 overflow-x-auto">
-                <button onclick="window.showTab('products')" id="tab-products" class="tab-btn px-6 py-4 font-semibold border-b-4 border-purple-600 text-purple-600">
+            <div class="flex gap-1 sm:gap-2 overflow-x-auto whitespace-nowrap">
+                <button onclick="window.showTab('products')" id="tab-products" class="tab-btn px-3 sm:px-6 py-3 sm:py-4 font-semibold border-b-4 border-purple-600 text-purple-600 text-sm sm:text-base">
                     📦 Produtos
                 </button>
-                <button onclick="window.showTab('pedidos')" id="tab-pedidos" class="tab-btn px-6 py-4 font-semibold border-b-4 border-gray-200 text-gray-600 hover:text-purple-600">
+                <button onclick="window.showTab('pedidos')" id="tab-pedidos" class="tab-btn px-3 sm:px-6 py-3 sm:py-4 font-semibold border-b-4 border-gray-200 text-gray-600 hover:text-purple-600 text-sm sm:text-base">
                     📋 Pedidos
                 </button>
             </div>
