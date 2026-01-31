@@ -723,7 +723,55 @@ window.selectDeliveryType = type => {
     document.getElementById('deliveryForm').classList.remove('hidden');
   }
   
+  // Mostrar botão de confirmar entrega
+  document.getElementById('confirmDeliveryBtn').classList.remove('hidden');
+};
+
+// =======================
+// CONFIRMAR ENTREGA (Validar dados e mostrar pagamento)
+// =======================
+window.confirmDelivery = () => {
+  // Capturar valores dos inputs
+  const nameInput = document.getElementById('deliveryName');
+  const phoneInput = document.getElementById('deliveryPhone');
+  const addressInput = document.getElementById('deliveryAddress');
+  
+  const name = nameInput?.value?.trim() || '';
+  const phone = phoneInput?.value?.trim() || '';
+  const address = addressInput?.value?.trim() || '';
+  
+  console.log('🔍 confirmDelivery - Valores capturados:', { name, phone, address });
+  
+  // Validar dados obrigatórios
+  if (!name || !phone) {
+    console.error('❌ Faltam dados obrigatórios:', { name, phone });
+    alert('⚠️ Por favor, preencha nome e telefone');
+    return;
+  }
+  
+  // Se for entrega, validar endereço
+  if (deliveryType === 'delivery' && !address) {
+    console.error('❌ Faltam dados de entrega:', { address });
+    alert('⚠️ Por favor, preencha o endereço de entrega');
+    return;
+  }
+  
+  console.log('✅ Entrega validada! Mostrando opções de pagamento...');
+  
+  // Calcular e mostrar total
+  const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const deliveryFee = deliveryType === 'delivery' ? 3 : 0;
+  const total = subtotal + deliveryFee;
+  
+  document.getElementById('deliveryTotal').classList.remove('hidden');
+  document.getElementById('deliveryTotalValue').innerText = formatPrice(total);
+  document.getElementById('deliveryTotalBreakdown').innerText = `Subtotal: ${formatPrice(subtotal)} + Taxa: ${formatPrice(deliveryFee)}`;
+  
+  // Mostrar seção de pagamento
   document.getElementById('paymentMethodSection').classList.remove('hidden');
+  
+  // Ocultar botão de confirmar entrega (já foi validado)
+  document.getElementById('confirmDeliveryBtn').classList.add('hidden');
 };
 
 window.selectPaymentMethod = method => {
@@ -1084,12 +1132,6 @@ async function processPaymentOnDelivery() {
   const blocoInput = document.getElementById('deliveryBloco');
   const aptoInput = document.getElementById('deliveryApto');
   
-  console.log('🔍 Valores capturados:', {
-    name: nameInput?.value,
-    phone: phoneInput?.value,
-    address: addressInput?.value
-  });
-  
   const deliveryInfo = {
     name: nameInput?.value?.trim() || '',
     phone: phoneInput?.value?.trim() || '',
@@ -1102,7 +1144,6 @@ async function processPaymentOnDelivery() {
 
   // Validar dados - para retirada local, endereço não é obrigatório
   if (!deliveryInfo.name || !deliveryInfo.phone) {
-    console.error('❌ Faltam dados:', { name: deliveryInfo.name, phone: deliveryInfo.phone });
     alert('⚠️ Por favor, preencha nome e telefone');
     return;
   }
