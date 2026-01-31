@@ -279,8 +279,13 @@ window.openQuantityModal = id => {
   document.getElementById('quantityModal').classList.remove('hidden');
 };
 
-window.closeQuantityModal = () =>
+window.closeQuantityModal = () => {
   document.getElementById('quantityModal').classList.add('hidden');
+  // Voltar ao modal anterior (unitModal) se houver múltiplas unidades
+  if (selectedProduct && selectedProduct.units && selectedProduct.units.length > 1) {
+    document.getElementById('unitModal').classList.remove('hidden');
+  }
+};
 
 window.increaseModalQuantity = () => updateQuantity(selectedQuantity + 1);
 window.decreaseModalQuantity = () => updateQuantity(Math.max(0, selectedQuantity - 1));
