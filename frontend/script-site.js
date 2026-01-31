@@ -1077,18 +1077,32 @@ window.addEventListener('DOMContentLoaded', async () => {
 // PAGAMENTO NA ENTREGA (CARTÃO / DINHEIRO)
 // =======================
 async function processPaymentOnDelivery() {
+  // Capturar valores - funcionam mesmo que um formulário esteja hidden
+  const nameInput = document.getElementById('deliveryName');
+  const phoneInput = document.getElementById('deliveryPhone');
+  const addressInput = document.getElementById('deliveryAddress');
+  const blocoInput = document.getElementById('deliveryBloco');
+  const aptoInput = document.getElementById('deliveryApto');
+  
+  console.log('🔍 Valores capturados:', {
+    name: nameInput?.value,
+    phone: phoneInput?.value,
+    address: addressInput?.value
+  });
+  
   const deliveryInfo = {
-    name: document.getElementById('deliveryName').value,
-    phone: document.getElementById('deliveryPhone').value,
-    address: document.getElementById('deliveryAddress').value,
-    bloco: document.getElementById('deliveryBloco').value,
-    apto: document.getElementById('deliveryApto').value,
+    name: nameInput?.value?.trim() || '',
+    phone: phoneInput?.value?.trim() || '',
+    address: addressInput?.value?.trim() || '',
+    bloco: blocoInput?.value?.trim() || '',
+    apto: aptoInput?.value?.trim() || '',
     type: deliveryType,
     paymentMethod: paymentMethod === 'card' ? 'Cartão' : 'Dinheiro'
   };
 
   // Validar dados - para retirada local, endereço não é obrigatório
   if (!deliveryInfo.name || !deliveryInfo.phone) {
+    console.error('❌ Faltam dados:', { name: deliveryInfo.name, phone: deliveryInfo.phone });
     alert('⚠️ Por favor, preencha nome e telefone');
     return;
   }
