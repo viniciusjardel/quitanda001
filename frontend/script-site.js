@@ -484,6 +484,8 @@ window.addToCart = () => {
     cart.push(cartItem);
   }
 
+  console.log('🛒 Produto adicionado ao carrinho:', selectedProduct.name);
+
   // 🎨 Pega a imagem ANTES de fechar o modal
   const productImg = document.getElementById('modalProductImage');
   
@@ -503,14 +505,31 @@ window.addToCart = () => {
     };
   }
 
-  // Fecha o modal IMEDIATAMENTE
-  closeQuantityModal();
+  // PASSO 1: Animar fechamento de ambos os modais simultaneamente
+  console.log('1️⃣ Fechando modais com animação...');
+  const quantityModal = document.getElementById('quantityModal');
+  const unitModal = document.getElementById('unitModal');
+  const quantityContent = quantityModal.querySelector('.bg-white');
+  const unitContent = unitModal.querySelector('.bg-white');
   
-  // Aguarda um pequeno delay para o modal desaparecer
+  // Adiciona animação de saída em ambos
+  if (quantityContent) quantityContent.classList.add('modal-close-down');
+  if (unitContent) unitContent.classList.add('modal-close-down');
+  
+  // Aguarda a animação dos modais terminar (400ms)
   setTimeout(() => {
+    // Esconde os modais
+    quantityModal.classList.add('hidden');
+    unitModal.classList.add('hidden');
+    
+    // Remove as classes de animação
+    if (quantityContent) quantityContent.classList.remove('modal-close-down');
+    if (unitContent) unitContent.classList.remove('modal-close-down');
+    
+    console.log('2️⃣ Modais fechados, iniciando animação do produto...');
+    
+    // PASSO 2: Animar a imagem voando para o carrinho
     if (imgClone) {
-      console.log('🎨 Iniciando animação...');
-      // Recria a imagem para animar
       const flyingImg = document.createElement('img');
       flyingImg.src = imgClone.src;
       flyingImg.style.position = 'fixed';
@@ -541,24 +560,22 @@ window.addToCart = () => {
         const distX = cartCenterX - startCenterX;
         const distY = cartCenterY - startCenterY;
         
-        // Anima
+        // Anima a imagem voando
         flyingImg.style.transition = 'all 2s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
         flyingImg.style.transform = `translate(${distX}px, ${distY}px) scale(0.1)`;
         flyingImg.style.opacity = '0';
         
-        // Após a animação terminar, mostra mensagem de sucesso e volta
+        console.log('🎬 Imagem voando para o carrinho...');
+        
+        // PASSO 3: Após a imagem chegar, mostrar mensagem de sucesso saindo do carrinho
         setTimeout(() => {
           flyingImg.remove();
+          console.log('3️⃣ Imagem chegou ao carrinho, mostrando mensagem de sucesso...');
           showSuccessMessage(selectedProduct.name);
-          
-          // Aguarda 1.5s antes de voltar à página inicial
-          setTimeout(() => {
-            transitionToHome();
-          }, 1500);
         }, 2000);
       }
     }
-  }, 100);
+  }, 400); // Tempo de animação dos modais
 
   saveCart();
   updateCartUI();
