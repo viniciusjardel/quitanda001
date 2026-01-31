@@ -546,10 +546,15 @@ window.addToCart = () => {
         flyingImg.style.transform = `translate(${distX}px, ${distY}px) scale(0.1)`;
         flyingImg.style.opacity = '0';
         
-        // Após a animação terminar, mostra mensagem de sucesso
+        // Após a animação terminar, mostra mensagem de sucesso e volta
         setTimeout(() => {
           flyingImg.remove();
           showSuccessMessage(selectedProduct.name);
+          
+          // Aguarda 1.5s antes de voltar à página inicial
+          setTimeout(() => {
+            transitionToHome();
+          }, 1500);
         }, 2000);
       }
     }
@@ -557,6 +562,30 @@ window.addToCart = () => {
 
   saveCart();
   updateCartUI();
+};
+
+// Função de transição para voltar ao início com animação
+window.transitionToHome = () => {
+  const main = document.querySelector('main');
+  if (main) {
+    main.style.transition = 'opacity 0.5s ease-out, transform 0.5s ease-out';
+    main.style.opacity = '0';
+    main.style.transform = 'scale(0.95)';
+    
+    setTimeout(() => {
+      // Fechar modal de quantidade
+      document.getElementById('quantityModal').classList.add('hidden');
+      document.getElementById('unitModal').classList.add('hidden');
+      
+      // Scroll para o topo
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+      
+      // Reset da animação
+      main.style.transition = 'opacity 0.5s ease-in';
+      main.style.opacity = '1';
+      main.style.transform = 'scale(1)';
+    }, 500);
+  }
 };
 
 window.toggleCart = () =>
