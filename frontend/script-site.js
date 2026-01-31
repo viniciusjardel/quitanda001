@@ -184,7 +184,7 @@ function renderProducts(list) {
       <img src="${product.image}" class="h-48 w-full object-cover rounded-lg mb-4">
       <h3 class="text-xl font-bold text-gray-800">${product.name}</h3>
       <p class="text-gray-500 text-sm mb-2">${product.description || ''}</p>
-      <p class="text-lg font-bold text-green-600 mb-4">${formatPrice(product.price)} / ${product.unit}</p>
+      <p class="text-lg font-bold text-green-600 mb-4">${formatPrice(product.price)} / ${product.unit.toUpperCase()}</p>
       <button class="mt-auto py-3 rounded-lg text-white font-bold"
         style="background:${product.color || '#7c3aed'}"
         onclick="window.openProductSelection('${product.id}')">
@@ -240,7 +240,7 @@ window.openProductSelection = id => {
   const unitOptions = document.getElementById('unitOptions');
   unitOptions.innerHTML = units.map(unit => `
     <button onclick="window.selectUnit('${unit}')" class="w-full p-4 bg-gradient-to-r from-purple-500 to-green-500 text-white rounded-lg font-bold text-lg hover:opacity-90 transition shadow-md">
-      ${unit}
+      ${unit.toUpperCase()}
     </button>
   `).join('');
   
@@ -284,7 +284,7 @@ window.openQuantityModal = id => {
   // Usar a unidade selecionada ou a padrão
   const unit = selectedProduct.selectedUnit || selectedProduct.unit;
   document.getElementById('modalProductPrice').innerText =
-    `${formatPrice(selectedProduct.price)} / ${unit}`;
+    `${formatPrice(selectedProduct.price)} / ${unit.toUpperCase()}`;
   document.getElementById('quantityDisplay').innerText = '0';
   document.getElementById('quantityInput').value = '';
 
@@ -624,7 +624,7 @@ function updateCartUI() {
     count += item.quantity;
     
     // Usar a unidade selecionada ou a padrão
-    const displayUnit = item.selectedUnit || item.unit || 'un';
+    const displayUnit = (item.selectedUnit || item.unit || 'un').toUpperCase();
 
     items.innerHTML += `
       <div class="flex justify-between items-center mb-4 p-4 bg-gray-50 rounded-lg border border-gray-200">
