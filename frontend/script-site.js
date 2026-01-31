@@ -516,7 +516,7 @@ window.addToCart = () => {
   if (quantityContent) quantityContent.classList.add('modal-fall-down');
   if (unitContent) unitContent.classList.add('modal-fall-down');
   
-  // Aguarda a animação dos modais terminar (1500ms)
+  // Aguarda a animação dos modais terminar (700ms)
   setTimeout(() => {
     // Esconde os modais
     quantityModal.classList.add('hidden');
@@ -575,7 +575,7 @@ window.addToCart = () => {
         }, 2000);
       }
     }
-  }, 1500); // Tempo de animação de queda dos modais
+  }, 700); // Tempo de animação de queda dos modais
 
   saveCart();
   updateCartUI();
