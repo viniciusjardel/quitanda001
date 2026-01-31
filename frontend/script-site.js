@@ -1099,11 +1099,15 @@ async function processPaymentOnDelivery() {
     return;
   }
 
+  // Gerar ID único do pedido UMA ÚNICA VEZ
+  const pedidoId = 'ped_' + Date.now();
+
   // Preparar dados do pedido
   const total = cart.reduce((sum, i) => sum + i.price * i.quantity, 0) +
     (deliveryType === 'delivery' ? 3 : 0);
 
   const orderData = {
+    id: pedidoId,
     customer_name: deliveryInfo.name,
     customer_phone: deliveryInfo.phone,
     address: deliveryInfo.address || 'Retirada no local',
@@ -1143,7 +1147,7 @@ async function processPaymentOnDelivery() {
 
   // Salvar pedido no localStorage com status de pagamento
   const pedidoCompleto = {
-    id: 'ped_' + Date.now(), // ID único do pedido
+    id: pedidoId, // Usar o mesmo ID gerado acima
     timestamp: new Date().toLocaleString('pt-BR'),
     customer_name: deliveryInfo.name,
     customer_phone: deliveryInfo.phone,
