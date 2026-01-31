@@ -60,8 +60,36 @@ async function initializeTables() {
       );
     `);
     console.log('✅ Tabelas do banco de dados inicializadas');
+    
+    // Migração: Adicionar coluna units se não existir
+    await addUnitsColumnIfNotExists();
   } catch (error) {
     console.error('❌ Erro ao criar tabelas:', error);
+  }
+}
+
+// Adicionar coluna units se não existir
+async function addUnitsColumnIfNotExists() {
+  try {
+    // Verificar se a coluna existe
+    const checkColumn = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'produtos' AND column_name = 'units'
+    `);
+    
+    if (checkColumn.rows.length === 0) {
+      // Coluna não existe, adicionar
+      console.log('🔄 Adicionando coluna units à tabela produtos...');
+      await pool.query(`
+        ALTER TABLE produtos ADD COLUMN units TEXT;
+      `);
+      console.log('✅ Coluna units adicionada com sucesso!');
+    } else {
+      console.log('✅ Coluna units já existe na tabela produtos');
+    }
+  } catch (error) {
+    console.error('⚠️ Erro ao verificar/adicionar coluna units:', error.message);
   }
 }
 
