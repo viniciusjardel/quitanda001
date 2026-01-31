@@ -211,9 +211,11 @@ function renderProducts(list) {
     const unitsHTML = units.map(u => `<span class="unit-badge-small">${u.toUpperCase()}</span>`).join('');
 
     card.innerHTML = `
-      <img src="${product.image}" class="h-48 w-full object-cover rounded-lg mb-3">
-      <div class="flex gap-1 mb-3 justify-end">
-        ${unitsHTML}
+      <div class="relative inline-block">
+        <img src="${product.image}" class="h-48 w-full object-cover rounded-lg mb-3">
+        <div class="absolute bottom-2 right-2 flex gap-1">
+          ${unitsHTML}
+        </div>
       </div>
       <h3 class="text-xl font-bold text-gray-800">${product.name}</h3>
       <p class="text-gray-500 text-sm mb-2">${product.description || ''}</p>
