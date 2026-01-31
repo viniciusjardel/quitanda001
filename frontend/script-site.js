@@ -214,12 +214,14 @@ function renderProducts(list) {
 
     card.innerHTML = `
       <img src="${product.image}" class="h-48 w-full object-cover rounded-lg mb-3">
-      <div style="display: flex; gap: 6px; margin-bottom: 12px; justify-content: flex-end; flex-wrap: wrap;">
-        ${unitsHTML}
-      </div>
       <h3 class="text-xl font-bold text-gray-800">${product.name}</h3>
-      <p class="text-gray-500 text-sm mb-2">${product.description || ''}</p>
-      <p class="text-lg font-bold text-green-600 mb-4">${formatPrice(product.price)} / ${product.unit.toUpperCase()}</p>
+      <p class="text-gray-500 text-sm mb-3">${product.description || ''}</p>
+      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px;">
+        <p class="text-lg font-bold text-green-600">${formatPrice(product.price)} / ${product.unit.toUpperCase()}</p>
+        <div style="display: flex; gap: 6px;">
+          ${unitsHTML}
+        </div>
+      </div>
       <button class="mt-auto py-3 rounded-lg text-white font-bold"
         style="background:${product.color || '#7c3aed'}"
         onclick="window.openProductSelection('${product.id}')">
