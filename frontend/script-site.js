@@ -809,9 +809,15 @@ window.confirmDelivery = () => {
   const deliveryFee = deliveryType === 'delivery' ? 3 : 0;
   const total = subtotal + deliveryFee;
   
+  // Atualizar texto do total conforme tipo de entrega
+  const totalLabel = deliveryType === 'delivery' ? 'Total com Delivery:' : 'Total:';
+  
   document.getElementById('deliveryTotal').classList.remove('hidden');
   document.getElementById('deliveryTotalValue').innerText = formatPrice(total);
-  document.getElementById('deliveryTotalBreakdown').innerText = `Subtotal: ${formatPrice(subtotal)} + Taxa: ${formatPrice(deliveryFee)}`;
+  document.getElementById('deliveryTotalLabel').innerText = totalLabel;
+  document.getElementById('deliveryTotalBreakdown').innerText = deliveryFee > 0 
+    ? `Subtotal: ${formatPrice(subtotal)} + Taxa: ${formatPrice(deliveryFee)}`
+    : `Subtotal: ${formatPrice(subtotal)}`;
   
   // Mostrar seção de pagamento
   document.getElementById('paymentMethodSection').classList.remove('hidden');
