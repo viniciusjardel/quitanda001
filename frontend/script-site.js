@@ -208,11 +208,13 @@ function renderProducts(list) {
 
     // Obter unidades (pode ser array ou string)
     const units = Array.isArray(product.units) ? product.units : [product.unit];
-    const unitsHTML = units.map(u => `<span class="unit-badge-small">${u.toUpperCase()}</span>`).join('');
+    const unitsHTML = units.map(u => 
+      `<span style="display: inline-flex; align-items: center; background-color: #10b981; color: white; padding: 5px 14px; border-radius: 20px; font-size: 11px; font-weight: 700; letter-spacing: 0.6px; white-space: nowrap; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);">${u.toUpperCase()}</span>`
+    ).join('');
 
     card.innerHTML = `
       <img src="${product.image}" class="h-48 w-full object-cover rounded-lg mb-3">
-      <div style="display: flex; gap: 6px; margin-bottom: 12px; justify-content: flex-end;">
+      <div style="display: flex; gap: 6px; margin-bottom: 12px; justify-content: flex-end; flex-wrap: wrap;">
         ${unitsHTML}
       </div>
       <h3 class="text-xl font-bold text-gray-800">${product.name}</h3>
