@@ -505,28 +505,28 @@ window.addToCart = () => {
     };
   }
 
-  // PASSO 1: Animar fechamento de ambos os modais simultaneamente
-  console.log('1️⃣ Fechando modais com animação...');
+  // PASSO 1: Animar queda dos modais para baixo (1.5s)
+  console.log('1️⃣ Modais caindo para baixo...');
   const quantityModal = document.getElementById('quantityModal');
   const unitModal = document.getElementById('unitModal');
   const quantityContent = quantityModal.querySelector('.bg-white');
   const unitContent = unitModal.querySelector('.bg-white');
   
-  // Adiciona animação de saída em ambos
-  if (quantityContent) quantityContent.classList.add('modal-close-down');
-  if (unitContent) unitContent.classList.add('modal-close-down');
+  // Adiciona animação de queda em ambos
+  if (quantityContent) quantityContent.classList.add('modal-fall-down');
+  if (unitContent) unitContent.classList.add('modal-fall-down');
   
-  // Aguarda a animação dos modais terminar (400ms)
+  // Aguarda a animação dos modais terminar (1500ms)
   setTimeout(() => {
     // Esconde os modais
     quantityModal.classList.add('hidden');
     unitModal.classList.add('hidden');
     
     // Remove as classes de animação
-    if (quantityContent) quantityContent.classList.remove('modal-close-down');
-    if (unitContent) unitContent.classList.remove('modal-close-down');
+    if (quantityContent) quantityContent.classList.remove('modal-fall-down');
+    if (unitContent) unitContent.classList.remove('modal-fall-down');
     
-    console.log('2️⃣ Modais fechados, iniciando animação do produto...');
+    console.log('2️⃣ Modais caíram, iniciando animação do produto...');
     
     // PASSO 2: Animar a imagem voando para o carrinho
     if (imgClone) {
@@ -575,7 +575,7 @@ window.addToCart = () => {
         }, 2000);
       }
     }
-  }, 400); // Tempo de animação dos modais
+  }, 1500); // Tempo de animação de queda dos modais
 
   saveCart();
   updateCartUI();
