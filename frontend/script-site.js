@@ -890,9 +890,11 @@ window.confirmPaymentMethod = async () => {
 // =======================
 
 async function generatePix() {
-  const total =
-    cart.reduce((sum, i) => sum + i.price * i.quantity, 0) +
-    (deliveryType === 'delivery' ? 3 : 0);
+  const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const deliveryFee = deliveryType === 'delivery' ? 3 : 0;
+  const total = subtotal + deliveryFee;
+
+  console.log('💜 Gerando PIX:', { subtotal, deliveryFee, total, deliveryType, cart });
 
   document.getElementById('pixTotal').innerText = formatPrice(total);
   document.getElementById('pixModal').classList.remove('hidden');
@@ -901,15 +903,29 @@ async function generatePix() {
     '<p class="text-center font-semibold">🔄 Gerando código PIX...</p>';
 
   try {
+    const payload = { 
+      valor: total, 
+      descricao: 'Pedido Quitanda Vila Natal'
+    };
+    
+    console.log('📤 Enviando para PIX:', JSON.stringify(payload));
+
     const res = await fetch(`${BACKEND_URL}/pix`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ valor: total, descricao: 'Pedido Quitanda Vila Natal' })
+      body: JSON.stringify(payload)
     });
 
-    if (!res.ok) throw new Error('Erro ao gerar PIX');
+    console.log('📬 Resposta PIX status:', res.status);
+
+    if (!res.ok) {
+      const errorText = await res.text();
+      console.error('❌ Erro PIX detalhado:', errorText);
+      throw new Error(`Erro ao gerar PIX: ${res.status}`);
+    }
 
     const data = await res.json();
+    console.log('✅ PIX gerado:', data);
 
     // 💾 Salva no localStorage para rastrear (igual ao projeto teste)
     localStorage.setItem('paymentId', data.id.toString());
