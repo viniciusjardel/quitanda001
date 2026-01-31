@@ -731,16 +731,25 @@ window.selectDeliveryType = type => {
 // CONFIRMAR ENTREGA (Validar dados e mostrar pagamento)
 // =======================
 window.confirmDelivery = () => {
-  // Capturar valores dos inputs
-  const nameInput = document.getElementById('deliveryName');
-  const phoneInput = document.getElementById('deliveryPhone');
-  const addressInput = document.getElementById('deliveryAddress');
+  // Pegar o form visível (pode ser pickupForm ou deliveryForm)
+  const pickupForm = document.getElementById('pickupForm');
+  const deliveryFormEl = document.getElementById('deliveryForm');
+  const activeForm = !pickupForm.classList.contains('hidden') ? pickupForm : deliveryFormEl;
+  
+  // Capturar valores dos inputs do form ativo
+  const nameInput = activeForm.querySelector('#deliveryName');
+  const phoneInput = activeForm.querySelector('#deliveryPhone');
+  const addressInput = deliveryFormEl.querySelector('#deliveryAddress');
+  const blocoInput = deliveryFormEl.querySelector('#deliveryBloco');
+  const aptoInput = deliveryFormEl.querySelector('#deliveryApto');
   
   const name = nameInput?.value?.trim() || '';
   const phone = phoneInput?.value?.trim() || '';
   const address = addressInput?.value?.trim() || '';
+  const bloco = blocoInput?.value?.trim() || '';
+  const apto = aptoInput?.value?.trim() || '';
   
-  console.log('🔍 confirmDelivery - Valores capturados:', { name, phone, address });
+  console.log('🔍 confirmDelivery - Tipo:', deliveryType, 'Valores:', { name, phone, address, bloco, apto });
   
   // Validar dados obrigatórios
   if (!name || !phone) {
@@ -1125,12 +1134,17 @@ window.addEventListener('DOMContentLoaded', async () => {
 // PAGAMENTO NA ENTREGA (CARTÃO / DINHEIRO)
 // =======================
 async function processPaymentOnDelivery() {
-  // Capturar valores - funcionam mesmo que um formulário esteja hidden
-  const nameInput = document.getElementById('deliveryName');
-  const phoneInput = document.getElementById('deliveryPhone');
-  const addressInput = document.getElementById('deliveryAddress');
-  const blocoInput = document.getElementById('deliveryBloco');
-  const aptoInput = document.getElementById('deliveryApto');
+  // Pegar o form visível
+  const pickupForm = document.getElementById('pickupForm');
+  const deliveryFormEl = document.getElementById('deliveryForm');
+  const activeForm = !pickupForm.classList.contains('hidden') ? pickupForm : deliveryFormEl;
+  
+  // Capturar valores dos inputs do form ativo
+  const nameInput = activeForm.querySelector('#deliveryName');
+  const phoneInput = activeForm.querySelector('#deliveryPhone');
+  const addressInput = deliveryFormEl.querySelector('#deliveryAddress');
+  const blocoInput = deliveryFormEl.querySelector('#deliveryBloco');
+  const aptoInput = deliveryFormEl.querySelector('#deliveryApto');
   
   const deliveryInfo = {
     name: nameInput?.value?.trim() || '',
