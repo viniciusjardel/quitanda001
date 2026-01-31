@@ -903,12 +903,15 @@ async function generatePix() {
     '<p class="text-center font-semibold">🔄 Gerando código PIX...</p>';
 
   try {
+    // Converter para centavos (inteiro) - multiplicar por 100 e arredondar
+    const valorEmCentavos = Math.round(total * 100);
+    
     const payload = { 
-      valor: total, 
+      valor: valorEmCentavos,
       descricao: 'Pedido Quitanda Vila Natal'
     };
     
-    console.log('📤 Enviando para PIX:', JSON.stringify(payload));
+    console.log('📤 Enviando para PIX (em centavos):', JSON.stringify(payload));
 
     const res = await fetch(`${BACKEND_URL}/pix`, {
       method: 'POST',
