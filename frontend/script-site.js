@@ -208,12 +208,12 @@ function renderProducts(list) {
 
     // Obter unidades (pode ser array ou string)
     const units = Array.isArray(product.units) ? product.units : [product.unit];
-    const unitsHTML = units.map(u => `<span class="unit-badge">${u.toUpperCase()}</span>`).join('');
+    const unitsHTML = units.map(u => `<span class="unit-badge-small">${u.toUpperCase()}</span>`).join('');
 
     card.innerHTML = `
       <div class="relative">
         <img src="${product.image}" class="h-48 w-full object-cover rounded-lg mb-4">
-        <div class="absolute bottom-2 right-2 flex flex-wrap gap-1 justify-end max-w-[90%]">
+        <div class="absolute bottom-2 right-2 flex flex-wrap gap-1 justify-end">
           ${unitsHTML}
         </div>
       </div>

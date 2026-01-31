@@ -114,3 +114,15 @@ input[type=number] {
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
     backdrop-filter: blur(4px);
 }
+
+.unit-badge-small {
+    display: inline-block;
+    background-color: #10b981;
+    color: white;
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 0.8px;
+    white-space: nowrap;
+}
