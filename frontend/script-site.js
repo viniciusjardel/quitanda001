@@ -25,6 +25,45 @@ let pendingWhatsAppUrl = null; // URL para enviar ao WhatsApp (opcional)
 // =======================
 const formatPrice = v => `R$ ${v.toFixed(2).replace('.', ',')}`;
 
+// Parseia strings de moeda aceitando vírgula ou ponto, retornando Number com casas decimais
+function parseCurrencyString(str) {
+  if (str == null) return 0;
+  const s = String(str).trim().replace(/\./g, '').replace(/,/g, '.').replace(/[^0-9.\-]/g, '');
+  const n = Number(s);
+  return isNaN(n) ? 0 : n;
+}
+
+// Atualiza o display de troco no modal de confirmação
+function updateCashChangeUI() {
+  try {
+    const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    const deliveryFee = deliveryType === 'delivery' ? 3 : 0;
+    const total = subtotal + deliveryFee;
+    const input = document.getElementById('cashReceivedInput');
+    const changeEl = document.getElementById('cashChange');
+    if (!input || !changeEl) return;
+    const received = parseCurrencyString(input.value || input.placeholder || '0');
+    const diff = received - total;
+    if (diff >= 0) {
+      changeEl.classList.remove('text-red-600');
+      changeEl.classList.add('text-green-700');
+      changeEl.textContent = `Troco: ${formatPrice(diff)}`;
+    } else {
+      changeEl.classList.remove('text-green-700');
+      changeEl.classList.add('text-red-600');
+      changeEl.textContent = `Falta: ${formatPrice(Math.abs(diff))}`;
+    }
+  } catch (e) { console.warn('Erro em updateCashChangeUI', e); }
+}
+
+function fillExactCash(){
+  const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+  const deliveryFee = deliveryType === 'delivery' ? 3 : 0;
+  const total = subtotal + deliveryFee;
+  const input = document.getElementById('cashReceivedInput');
+  if (input) { input.value = total.toFixed(2).replace('.', ','); updateCashChangeUI(); }
+}
+
 // Limpar localStorage agressivamente se exceder limite
 const cleanLocalStorage = () => {
   try {
@@ -902,14 +941,28 @@ window.selectPaymentMethod = method => {
     titleEl.innerText = '💜 Confirmar Pagamento com PIX';
     messageEl.innerText = 'Você será redirecionado para gerar um código QR PIX. Após pagar, a confirmação será automática.';
     confirmBtn.innerText = '✅ Gerar Código PIX';
+    // Esconder seção de troco
+    document.getElementById('cashPaymentSection').classList.add('hidden');
   } else if (method === 'card') {
     titleEl.innerText = '💳 Confirmar Pagamento com Cartão';
     messageEl.innerText = 'Você pagará com cartão de débito/crédito na entrega do seu pedido.';
     confirmBtn.innerText = '✅ Confirmar Cartão na Entrega';
+    document.getElementById('cashPaymentSection').classList.add('hidden');
   } else if (method === 'money') {
     titleEl.innerText = '💵 Confirmar Pagamento em Dinheiro';
-    messageEl.innerText = 'Você pagará em dinheiro na entrega do seu pedido. Tenha a quantia exata se possível.';
+    messageEl.innerText = 'Você pagará em dinheiro na entrega do seu pedido. Informe com quanto irá pagar para calcular o troco.';
     confirmBtn.innerText = '✅ Confirmar Dinheiro na Entrega';
+    // Mostrar seção de troco e pré-preencher placeholder/valor com o total
+    document.getElementById('cashPaymentSection').classList.remove('hidden');
+    const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    const deliveryFee = deliveryType === 'delivery' ? 3 : 0;
+    const total = subtotal + deliveryFee;
+    const input = document.getElementById('cashReceivedInput');
+    if (input) {
+      input.value = '';
+      input.placeholder = total.toFixed(2).replace('.', ',');
+      updateCashChangeUI();
+    }
   }
 
   confirmModal.classList.remove('hidden');
@@ -937,6 +990,14 @@ async function generatePix() {
 
   console.log('💜 Gerando PIX:', { subtotal, deliveryFee, total, deliveryType, cart });
 
+  // UTIL: parsear string de moeda (aceita vírgula ou ponto)
+  function parseCurrencyString(str) {
+    if (str == null) return 0;
+    const s = String(str).trim().replace(/\./g, '').replace(/,/g, '.').replace(/[^0-9.\-]/g, '');
+    const n = Number(s);
+    return isNaN(n) ? 0 : n;
+  }
+
   document.getElementById('pixTotal').innerText = formatPrice(total);
   document.getElementById('pixModal').classList.remove('hidden');
 
@@ -944,15 +1005,19 @@ async function generatePix() {
     '<p class="text-center font-semibold">🔄 Gerando código PIX...</p>';
 
   try {
+    
     // Converter para centavos (inteiro) - multiplicar por 100 e arredondar
     const valorEmCentavos = Math.round(total * 100);
-    
-    const payload = { 
-      valor: valorEmCentavos,
+
+    // Enviar ambos: `valor` em reais com 2 casas decimais (ex: 5.98)
+    // e `valor_centavos` como inteiro (ex: 598). Muitos backends aceitam um ou outro.
+    const payload = {
+      valor: Number(total.toFixed(2)),
+      valor_centavos: valorEmCentavos,
       descricao: 'Pedido Quitanda Vila Natal'
     };
-    
-    console.log('📤 Enviando para PIX (em centavos):', JSON.stringify(payload));
+
+    console.log('📤 Enviando para PIX (payload):', JSON.stringify(payload));
 
     const res = await fetch(`${BACKEND_URL}/pix`, {
       method: 'POST',
@@ -1278,6 +1343,19 @@ async function processPaymentOnDelivery() {
   const total = cart.reduce((sum, i) => sum + i.price * i.quantity, 0) +
     (deliveryType === 'delivery' ? 3 : 0);
 
+  // Ler valor informado para dinheiro (se aplicável)
+  let cashReceived = null;
+  let cashChange = null;
+  if (paymentMethod === 'money') {
+    const input = document.getElementById('cashReceivedInput');
+    if (input) {
+      // Se usuário não preencheu, assumir pagamento exato pelo total
+      const raw = (input.value && String(input.value).trim() !== '') ? input.value : total.toFixed(2);
+      cashReceived = parseCurrencyString(raw);
+      cashChange = Number((cashReceived - total).toFixed(2));
+    }
+  }
+
   const orderData = {
     id: pedidoId,
     customer_name: deliveryInfo.name,
@@ -1289,6 +1367,8 @@ async function processPaymentOnDelivery() {
     payment_method: deliveryInfo.paymentMethod,
     payment_status: 'pendente',
     payment_id: null,
+    cash_received: cashReceived,
+    cash_change: cashChange,
     items: cart.map(i => ({
       id: i.id,
       name: i.name,
@@ -1312,6 +1392,8 @@ async function processPaymentOnDelivery() {
     payment_method: deliveryInfo.paymentMethod,
     payment_status: 'pendente',
     payment_id: null,
+    cash_received: cashReceived,
+    cash_change: cashChange,
     items: cart.map(i => ({
       id: i.id,
       name: i.name,
@@ -1321,6 +1403,17 @@ async function processPaymentOnDelivery() {
     })),
     total
   };
+
+  // Incluir nota resumida com informações de pagamento (compatibilidade caso backend não persista campos extra)
+  try {
+    if (paymentMethod === 'money') {
+      const receivedStr = cashReceived !== null ? `R$ ${cashReceived.toFixed(2).replace('.', ',')}` : '-';
+      const changeStr = cashChange !== null ? `R$ ${cashChange.toFixed(2).replace('.', ',')}` : '-';
+      pedidoCompleto.notes = `Pagamento em Dinheiro: Pago com ${receivedStr} • Troco: ${changeStr}`;
+    } else {
+      pedidoCompleto.notes = pedidoCompleto.notes || '';
+    }
+  } catch (e) { console.warn('Erro ao adicionar notas de troco ao pedido', e); }
   
   // Salvar no backend (e fallback em localStorage)
   await salvarPedidoNoBackend(pedidoCompleto);
@@ -1339,7 +1432,7 @@ ${cart.map(i => `• ${i.name} (${i.quantity}x) - R$ ${(i.price * i.quantity).to
 ${deliveryType === 'delivery' ? '🚗 *Entrega: Sim (+R$ 3,00)*' : '🏪 *Retirada: No Local*'}
 
 *Total: R$ ${total.toFixed(2).replace('.', ',').replace(',', '.')}*
-*Forma de Pagamento: ${deliveryInfo.paymentMethod}*
+*Forma de Pagamento: ${deliveryInfo.paymentMethod}*${paymentMethod === 'money' ? `\n*Pago com: R$ ${cashReceived ? cashReceived.toFixed(2).replace('.', ',') : '-'} • Troco: R$ ${cashChange !== null ? cashChange.toFixed(2).replace('.', ',') : '-'}*` : ''}
   `.trim();
 
   const encodedMessage = encodeURIComponent(message);
@@ -1358,7 +1451,8 @@ ${deliveryType === 'delivery' ? '🚗 *Entrega: Sim (+R$ 3,00)*' : '🏪 *Retira
   
   // Mostrar modal de sucesso com opção de WhatsApp
   setTimeout(() => {
-    const successMsg = `✅ Seu pedido foi confirmado!\n\n💳 Forma de Pagamento: ${deliveryInfo.paymentMethod}\n\nDeseja enviar para o WhatsApp da loja?`;
+    const paymentInfo = paymentMethod === 'money' ? `\n\nPago com: R$ ${cashReceived ? cashReceived.toFixed(2).replace('.', ',') : '-'} • Troco: R$ ${cashChange !== null ? cashChange.toFixed(2).replace('.', ',') : '-'}` : '';
+    const successMsg = `✅ Seu pedido foi confirmado!\n\n💳 Forma de Pagamento: ${deliveryInfo.paymentMethod}${paymentInfo}\n\nDeseja enviar para o WhatsApp da loja?`;
     window.openSuccessOrderModal(pedidoCompleto.id, successMsg);
   }, 500);
 }

@@ -116,3 +116,39 @@ input[type=number] {
     white-space: nowrap;
     box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);
 }
+
+/* ============= Fix: esconder bolinha vermelha no painel de Pedidos (emergência) ============= */
+/* Regra agressiva para ocultar bolinhas vermelhas pequenas que podem vir de classes, inline styles, pseudo-elements ou SVGs. */
+/* Alvo principal: overlay dinâmico (#modal-overlay-dynamic) e também .pedido-item */
+
+n/* Ocultar pseudo-elementos que possam desenhar um ponto vermelho via ::before / ::after */
+#modal-overlay-dynamic *::before,
+#modal-overlay-dynamic *::after,
+.pedido-item *::before,
+.pedido-item *::after {
+    display: none !important;
+    content: none !important;
+}
+
+n/* Ocultar elementos com classes utilitárias de cor vermelha e forma arredondada */
+#modal-overlay-dynamic [class*="bg-red"],
+#modal-overlay-dynamic .status-dot,
+#modal-overlay-dynamic #cartBadge,
+.pedido-item [class*="bg-red"],
+.pedido-item .status-dot,
+.pedido-item #cartBadge {
+    display: none !important;
+}
+
+n/* Ocultar pequenos elementos vermelhos (heurística por tamanho e borda arredondada) */
+#modal-overlay-dynamic *,
+.pedido-item * {
+    /* reset local: qualquer elemento com borda arredondada e fundo vermelho será ocultado */
+}
+
+n/* Ocultar círculos SVG vermelhos dentro do overlay/pedido */
+#modal-overlay-dynamic svg circle[fill],
+.pedido-item svg circle[fill] {
+    display: none !important;
+}
+/* fim do fix (emergência) */

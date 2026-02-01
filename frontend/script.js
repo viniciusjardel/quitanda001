@@ -18,12 +18,37 @@ function showSuccessModal(title = 'Sucesso!', message = 'Operação realizada co
     document.getElementById('successMessage').textContent = message;
     modal.classList.remove('hidden');
     modal.classList.add('flex');
+
+    // Se existir o overlay dinâmico do pedido, impedir que ele capture cliques
+    try{
+        const overlay = document.getElementById('modal-overlay-dynamic');
+        if (overlay) {
+            overlay.style.pointerEvents = 'none';
+        }
+    }catch(e){/* ignorar */}
 }
 
 function closeSuccessModal() {
     const modal = document.getElementById('successModal');
     modal.classList.add('hidden');
     modal.classList.remove('flex');
+    // Se o modal de sucesso foi aberto a partir do fluxo de salvar anotações,
+    // fechar também o modal da nota e recarregar a lista.
+    try{
+        if (window.__afterSuccessClosePedido) {
+            window.__afterSuccessClosePedido = false;
+            closePedidoModal();
+            // Recarregar pedidos em background
+            setTimeout(()=>{ try{ loadPedidos(); }catch(e){} }, 50);
+        }
+    }catch(e){console.warn('Erro em afterSuccessClosePedido', e);}    
+    // Restaurar interação do overlay dinâmico, se existente
+    try{
+        const overlay = document.getElementById('modal-overlay-dynamic');
+        if (overlay) {
+            overlay.style.pointerEvents = '';
+        }
+    }catch(e){/* ignorar */}
 }
 let editingProductId = null;
 let allPedidos = [];
@@ -52,6 +77,10 @@ window.diagnosticarPedidos = function() {
 
 // Chamar diagnóstico na inicialização
 window.diagnosticarPedidos();
+
+// Desativar temporariamente qualquer limpeza/remoção automática de pontos vermelhos
+// Para reativar no console: `window.__disableRedDotCleanup = false`
+window.__disableRedDotCleanup = true;
 
 // =======================
 // CARREGAR PRODUTOS DA API
@@ -220,7 +249,7 @@ function openProductModal() {
     
     const requiredElements = [
         'modalTitle', 'productId', 'productName', 'productDescription', 
-        'productImage', 'productImageFile',
+        'productImage',
         'productImageData', 'productColor', 'imagePreview', 'productModal'
     ];
     
@@ -242,7 +271,6 @@ function openProductModal() {
     document.getElementById('productName').value = '';
     document.getElementById('productDescription').value = '';
     document.getElementById('productImage').value = '';
-    document.getElementById('productImageFile').value = '';
     document.getElementById('productImageData').value = '';
     document.getElementById('productColor').value = '';
     document.getElementById('imagePreview').classList.add('hidden');
@@ -283,7 +311,6 @@ function editProduct(id) {
     document.getElementById('productName').value = product.name;
     document.getElementById('productDescription').value = product.description || '';
     document.getElementById('productImage').value = product.image;
-    document.getElementById('productImageFile').value = '';
     document.getElementById('productImageData').value = '';
     document.getElementById('productColor').value = product.color || '';
     
@@ -355,39 +382,17 @@ function selectColor(color, element) {
 // MANIPULAR IMAGEM
 // =======================
 document.addEventListener('DOMContentLoaded', () => {
-    const fileInput = document.getElementById('productImageFile');
     const urlInput = document.getElementById('productImage');
-    
-    if (fileInput) {
-        fileInput.addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (file) {
-                urlInput.disabled = true;
-                urlInput.value = '';
-                
-                const reader = new FileReader();
-                reader.onload = (event) => {
-                    const base64 = event.target.result;
-                    document.getElementById('productImageData').value = base64;
-                    document.getElementById('imagePreview').classList.remove('hidden');
-                    document.getElementById('previewImg').src = base64;
-                };
-                reader.readAsDataURL(file);
-            }
-        });
-    }
-    
     if (urlInput) {
         urlInput.addEventListener('input', (e) => {
             const url = e.target.value;
             if (url) {
-                fileInput.disabled = true;
-                fileInput.value = '';
                 document.getElementById('productImageData').value = '';
                 document.getElementById('imagePreview').classList.remove('hidden');
                 document.getElementById('previewImg').src = url;
             } else {
-                fileInput.disabled = false;
+                document.getElementById('imagePreview').classList.add('hidden');
+                document.getElementById('previewImg').src = '';
             }
         });
     }
@@ -401,9 +406,8 @@ async function saveProduct(e) {
     
     console.log('%c💾 SALVANDO PRODUTO...', 'color: blue; font-weight: bold;');
     
-    const imageData = document.getElementById('productImageData').value;
     const imageUrl = document.getElementById('productImage').value;
-    const finalImage = imageData || imageUrl;
+    const finalImage = imageUrl;
     
     if (!finalImage) {
         alert('⚠️ Por favor, adicione uma imagem');
@@ -639,31 +643,33 @@ function renderPedidos(pedidos) {
         return;
     }
 
-    const statusEmojis = {
-        'pendente': '🔴',
-        'confirmado': '🟡',
-        'preparando': '🟠',
-        'pronto': '🟢',
-        'entregue': '✅',
-        'cancelado': '❌'
-    };
+    // statusLabels removed: status badge functionality deprecated and removed per request
 
     list.innerHTML = pedidos.map(p => {
-        const paymentBadge = p.payment_status === 'pago' ? '✅ Pago' : '❌ Pendente';
-        const paymentColor = p.payment_status === 'pago' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800';
+        // normalizar status para evitar problemas com maiúsculas/minúsculas ou variações
+        const normStatus = String(p.payment_status || '').toLowerCase().trim();
+        // detectar categoria com base em substring/regex para aceitar variações
+        let statusCategory = 'unknown';
+        if (/pendente|pending/.test(normStatus)) statusCategory = 'pendente';
+        else if (/cancel|cance|cancelled|canceled/.test(normStatus)) statusCategory = 'cancelado';
+        else if (/pago|paid/.test(normStatus)) statusCategory = 'pago';
+
+        const statusTextMap = { 'pendente': '🟡 Pagamento Pendente', 'cancelado': '❌ Pedido Cancelado', 'pago': '✅ Pago' };
+        const paymentBadge = statusTextMap[statusCategory] || (p.payment_status || '');
+        const paymentColor = statusCategory === 'pago' ? 'bg-green-100 text-green-800' : (statusCategory === 'pendente' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800');
+        const statusBgClass = statusCategory === 'pago' ? 'bg-green-50' : (statusCategory === 'pendente' ? 'bg-yellow-50' : (statusCategory === 'cancelado' ? 'bg-red-50' : ''));
         
         return `
-        <div class="pedido-item border-2 border-gray-200 rounded-lg p-4 hover:border-purple-400 transition cursor-pointer ${p.payment_status === 'pago' ? 'bg-green-50' : 'bg-yellow-50'}" data-pedido-id="${p.id}">
+        <div class="pedido-item border-2 border-gray-200 rounded-lg p-4 hover:border-purple-400 transition cursor-pointer ${statusBgClass}" data-pedido-id="${p.id}">
             <div class="flex justify-between items-start mb-3">
                 <div>
-                    <h3 class="text-lg font-bold text-gray-800">Nota #${p.id}</h3>
+                    <h3 class="text-lg font-bold text-gray-800">Nota #${p.id}
+                        ${statusCategory === 'cancelado' ? '<span class="ml-2 text-sm font-bold text-red-600">❌ Pedido Cancelado</span>' : (statusCategory === 'pendente' ? '<span class="ml-2 text-sm font-bold text-yellow-600">🟡 Pagamento Pendente</span>' : (statusCategory === 'pago' ? '<span class="ml-2 text-sm font-bold text-green-600">✅ Pago</span>' : ''))}
+                    </h3>
                     <p class="text-sm text-gray-700 font-semibold">${p.customer_name}</p>
                     <p class="text-sm text-gray-500">📱 ${p.customer_phone}</p>
                 </div>
-                <div class="flex gap-2">
-                    <span class="px-3 py-1 rounded-full text-sm font-semibold ${paymentColor}">${paymentBadge}</span>
-                    <span class="text-xl">${statusEmojis[p.status] || '❓'}</span>
-                </div>
+                
             </div>
             
             <p class="text-sm text-gray-600 mb-2">📍 ${p.address}${p.bloco ? `, Bloco ${p.bloco}` : ''}${p.apto ? `, Apt ${p.apto}` : ''}</p>
@@ -687,6 +693,26 @@ function renderPedidos(pedidos) {
         });
     });
     
+    // Garantir badge de status correto mesmo se outro código remover/alterar o conteúdo
+    try {
+        const statusTextMap = { 'pendente': '🟡 Pagamento Pendente', 'cancelado': '❌ Pedido Cancelado', 'pago': '✅ Pago' };
+        document.querySelectorAll('.pedido-item').forEach(item => {
+            const id = item.getAttribute('data-pedido-id');
+            const pedido = (pedidos || []).find(p => String(p.id) === String(id)) || {};
+            const norm = String(pedido.payment_status || '').toLowerCase().trim();
+            let cat = 'unknown';
+            if (/pendente|pending/.test(norm)) cat = 'pendente';
+            else if (/cancel|cance|cancelled|canceled/.test(norm)) cat = 'cancelado';
+            else if (/pago|paid/.test(norm)) cat = 'pago';
+
+            const labelHtml = cat === 'cancelado' ? '<span class="ml-2 text-sm font-bold text-red-600">❌ Pedido Cancelado</span>' : (cat === 'pendente' ? '<span class="ml-2 text-sm font-bold text-yellow-600">🟡 Pagamento Pendente</span>' : (cat === 'pago' ? '<span class="ml-2 text-sm font-bold text-green-600">✅ Pago</span>' : ''));
+            const h3 = item.querySelector('h3');
+            if (h3) {
+                // Substituir apenas o título para garantir um único rótulo visível
+                h3.innerHTML = `Nota #${pedido.id} ${labelHtml}`;
+            }
+        });
+    } catch (e) { console.warn('Erro ao aplicar badge fallback', e); }
     console.log('%c✅ HTML gerado:', 'color: green; font-weight: bold;', `${list.innerHTML.length} caracteres`);
     console.log('%c✅ HTML dos pedidos renderizado na tela!', 'color: green; font-weight: bold;');
 }
@@ -713,6 +739,37 @@ window.abrirPedidoModal = function(id) {
     const dataFormatada = new Date(pedido.created_at).toLocaleDateString('pt-BR');
     const horaFormatada = new Date(pedido.created_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'});
     document.getElementById('notaData').textContent = `${dataFormatada} às ${horaFormatada}`;
+
+    // ===== Atualizar visual do modal conforme status de pagamento (pendente / cancelado / pago) =====
+    (function applyStatusVisual(pedido){
+        try{
+            const overlay = document.getElementById('modal-overlay-dynamic') || document.getElementById('pedidoModal');
+            if (!overlay) return;
+
+            // selecione o painel principal do modal (container branco)
+            const panel = overlay.querySelector('.bg-white.rounded-2xl') || overlay.querySelector('.rounded-2xl') || overlay;
+
+            // normalizar status
+            const st = (pedido.payment_status || '').toString().toLowerCase().trim();
+
+            // limpar classes de fundo anteriores (classes utilitárias do Tailwind)
+            if (panel && panel.classList) {
+                panel.classList.remove('bg-green-50','bg-yellow-50','bg-red-50');
+            }
+
+            // aplicar fundo conforme status
+            if (st === 'pendente') {
+                panel.classList.add('bg-yellow-50');
+            } else if (st === 'cancelado') {
+                panel.classList.add('bg-red-50');
+            } else if (st === 'pago') {
+                panel.classList.add('bg-green-50');
+            }
+
+            // Nota: rótulo/badge dentro do modal foi removido intencionalmente.
+            // O status será exibido no card da nota (lista de pedidos). Mantemos apenas o fundo do painel.
+        }catch(e){ console.warn('Erro ao aplicar visual de status no modal', e); }
+    })(pedido);
     
     // ===== PREENCHER INFORMAÇÕES DO CLIENTE =====
     document.getElementById('notaCliente').innerHTML = `
@@ -743,6 +800,41 @@ window.abrirPedidoModal = function(id) {
     
     // ===== PREENCHER TOTAL =====
     document.getElementById('notaTotal').textContent = `R$ ${parseFloat(pedido.total).toFixed(2).replace('.', ',')}`;
+    // Mostrar informações de troco quando disponíveis (campos: cash_received, cash_change)
+    try {
+        const notaCashEl = document.getElementById('notaCashInfo');
+        if (notaCashEl) {
+            // Primeiro, tentar pelos campos explícitos
+            let cr = pedido.cash_received !== undefined && pedido.cash_received !== null ? Number(pedido.cash_received) : null;
+            let cc = pedido.cash_change !== undefined && pedido.cash_change !== null ? Number(pedido.cash_change) : null;
+
+            // Se não existir, tentar extrair dos notes (formato: "Pagamento em Dinheiro: Pago com R$ X • Troco: R$ Y")
+            if (cr === null && pedido.notes) {
+                try {
+                    const m = String(pedido.notes).match(/Pago com\s*R?\$?\s*([0-9.,]+)/i);
+                    const n = String(pedido.notes).match(/Troco:\s*R?\$?\s*([0-9.,]+)/i);
+                    if (m) cr = parseFloat(m[1].replace(/\./g,'').replace(/,/g,'.'));
+                    if (n) cc = parseFloat(n[1].replace(/\./g,'').replace(/,/g,'.'));
+                } catch(e) { /* ignorar parsing */ }
+            }
+
+            if (cr !== null) {
+                const receivedStr = `R$ ${cr.toFixed(2).replace('.', ',')}`;
+                const changeStr = cc !== null ? `R$ ${cc.toFixed(2).replace('.', ',')}` : '-';
+                if (cc === 0) {
+                    notaCashEl.innerHTML = `<div class="bg-white p-3 rounded-lg border-2 border-gray-200"><strong>Pagamento em Dinheiro:</strong> Pago com valor exato (${receivedStr})</div>`;
+                } else if (cc > 0) {
+                    notaCashEl.innerHTML = `<div class="bg-white p-3 rounded-lg border-2 border-gray-200"><strong>Pagamento em Dinheiro:</strong> Pago com ${receivedStr} • Troco: <span class="font-bold text-green-600">${changeStr}</span></div>`;
+                } else {
+                    notaCashEl.innerHTML = `<div class="bg-white p-3 rounded-lg border-2 border-gray-200"><strong>Pagamento em Dinheiro:</strong> Pago com ${receivedStr} • <span class="text-red-600">Falta: ${changeStr}</span></div>`;
+                }
+                notaCashEl.classList.remove('hidden');
+            } else {
+                notaCashEl.classList.add('hidden');
+                notaCashEl.innerHTML = '';
+            }
+        }
+    } catch (e) { console.warn('Erro ao renderizar informação de troco na nota', e); }
     
     // ===== VERIFICAR SE DEVE MOSTRAR BOTÕES DE PAGAMENTO =====
     const metodosPagamentoBotoes = ['dinheiro', 'cartão', 'cartao']; // Aceita variações
@@ -759,13 +851,13 @@ window.abrirPedidoModal = function(id) {
         console.log('%c🔍 Status Atual:', 'color: cyan;', 'Raw:', pedido.payment_status, 'Normalizado:', statusAtual);
         
         document.getElementById('botoesStatusPagamento').innerHTML = `
-            <button class="w-full p-3 rounded-lg font-bold transition ${statusAtual === 'cancelado' ? 'bg-red-500 text-white border-2 border-red-700' : 'bg-red-100 text-red-800 hover:bg-red-200'}" onclick="preparaConfirmacaoPagamento('cancelado', 'Pedido Cancelado')">
+            <button class="w-full p-3 rounded-lg font-bold transition ${statusAtual === 'cancelado' ? 'bg-red-500 text-white border-2 border-red-700' : 'bg-red-100 text-red-800 hover:bg-red-200'}" onclick="aplicarStatusPagamentoInstantaneo('cancelado', 'Pedido Cancelado')">
                 ❌ Pedido Cancelado
             </button>
-            <button class="w-full p-3 rounded-lg font-bold transition ${statusAtual === 'pendente' ? 'bg-yellow-500 text-white border-2 border-yellow-700' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'}" onclick="preparaConfirmacaoPagamento('pendente', 'Pagamento Pendente')">
+            <button class="w-full p-3 rounded-lg font-bold transition ${statusAtual === 'pendente' ? 'bg-yellow-500 text-white border-2 border-yellow-700' : 'bg-yellow-100 text-yellow-800 hover:bg-yellow-200'}" onclick="aplicarStatusPagamentoInstantaneo('pendente', 'Pagamento Pendente')">
                 🟡 Pagamento Pendente
             </button>
-            <button class="w-full p-3 rounded-lg font-bold transition ${statusAtual === 'pago' ? 'bg-green-500 text-white border-2 border-green-700' : 'bg-green-100 text-green-800 hover:bg-green-200'}" onclick="preparaConfirmacaoPagamento('pago', 'Pagamento Confirmado')">
+            <button class="w-full p-3 rounded-lg font-bold transition ${statusAtual === 'pago' ? 'bg-green-500 text-white border-2 border-green-700' : 'bg-green-100 text-green-800 hover:bg-green-200'}" onclick="aplicarStatusPagamentoInstantaneo('pago', 'Pagamento Confirmado')">
                 ✅ Pagamento Confirmado
             </button>
         `;
@@ -792,8 +884,295 @@ window.abrirPedidoModal = function(id) {
             document.body.appendChild(overlay);
         }
         
+        // Fazer varredura e remover pontos vermelhos do modal ORIGINAL antes de copiar (para cobrir casos onde scripts adicionam no modal estático)
+        (function scanAndRemoveInOriginal(container){
+            // pular limpeza agressiva se flag global estiver ativa
+            if (window.__disableRedDotCleanup) { console.log('[redDotCleanup] scanAndRemoveInOriginal skipped'); return; }
+            try{
+                const smallEls = Array.from(container.querySelectorAll('*')).filter(el => {
+                    try{
+                        const cs = getComputedStyle(el);
+                        const bg = (cs.backgroundColor||'').toLowerCase();
+                        const w = parseFloat(cs.width) || el.offsetWidth || 0;
+                        const h = parseFloat(cs.height) || el.offsetHeight || 0;
+                        const br = cs.borderRadius || '';
+                        const isSmall = (Math.max(w,h)>0) && Math.max(w,h) <= 28;
+                        const isRound = br.includes('%') || (/px/.test(br) && parseFloat(br) >= Math.min(w,h)/2 - 1);
+                        const isRed = bg && (bg.includes('red') || bg.includes('ef4444') || bg.includes('239, 68, 68') );
+                        return isSmall && isRound && isRed;
+                    }catch(e){ return false; }
+                });
+                if (smallEls.length){
+                    console.warn('[scanAndRemoveInOriginal] Removing red candidates from original modal:', smallEls.map(e=>({path: e.tagName, id: e.id, class: e.className}))); 
+                    smallEls.forEach(e => e.remove());
+                }
+                // também tentar remover pseudo-elements forçando um style override
+                container.querySelectorAll('*').forEach(el=>{
+                    try{
+                        const csb = getComputedStyle(el,'::before');
+                        const csa = getComputedStyle(el,'::after');
+                        if (csb && csb.content && csb.content !== 'none' && (csb.backgroundColor||'').toLowerCase().includes('red')){ console.warn('Removing red pseudo ::before from', el); el.style.setProperty('--_tmp_dummy','none'); }
+                        if (csa && csa.content && csa.content !== 'none' && (csa.backgroundColor||'').toLowerCase().includes('red')){ console.warn('Removing red pseudo ::after from', el); el.style.setProperty('--_tmp_dummy2','none'); }
+                    }catch(e){}
+                });
+            }catch(e){ console.error('Error scanning original modal', e); }
+        })(modal);
+
         // Transferir conteúdo do modal estático para o overlay dinâmico
         overlay.innerHTML = modal.innerHTML;
+
+        // Ação imediata e agressiva: remover qualquer elemento pequeno posicionado no canto superior-direito do modal (fix visual rápido)
+        try {
+            const overlayRect = overlay.getBoundingClientRect();
+            Array.from(overlay.querySelectorAll('*')).forEach(el => {
+                try {
+                    const cs = getComputedStyle(el);
+                    const rect = el.getBoundingClientRect();
+                    const maxDim = Math.max(rect.width, rect.height);
+                    const nearTop = (rect.top - overlayRect.top) < 48;
+                    const nearRight = (overlayRect.right - rect.right) < 48;
+                    const isSmall = maxDim > 0 && maxDim <= 48;
+                    const isRedish = ((cs.backgroundColor||'').toLowerCase().includes('ef4444') || (cs.backgroundColor||'').toLowerCase().includes('239, 68, 68') || (cs.backgroundColor||'').toLowerCase().includes('255, 0, 0') || (cs.backgroundImage||'').toLowerCase().includes('radial-gradient') && (cs.backgroundImage||'').toLowerCase().includes('red') || (cs.boxShadow||'').toLowerCase().match(/239|ef4444|255/));
+
+                    if (isSmall && nearTop && nearRight && isRedish) {
+                        // remover imediatamente
+                        el.remove();
+                        console.warn('[quickFix] Removed immediate top-right small red element', { tag: el.tagName, classes: el.className, rect });
+                    }
+
+                    // fallback: se estiver exatamente localizado no canto superior-direito e pequeno, remover independente da cor
+                    if (isSmall && nearTop && nearRight) {
+                        el.remove();
+                        // nota: este é um fallback agressivo para garantir remoção visual imediata
+                        console.warn('[quickFix] Removed top-right small element (fallback)', { tag: el.tagName, classes: el.className, rect });
+                    }
+                } catch (e) { }
+            });
+        } catch (e) { console.warn('quickFix failed', e); }
+
+        // Varredura global: remover qualquer elemento pequeno, arredondado e vermelho em todo o documento (solução imediata)
+        (function globalRemoveRedDots(){
+            if (window.__disableRedDotCleanup) { console.log('[redDotCleanup] globalRemoveRedDots skipped'); return; }
+            function isSmallRoundRed(el){
+                try{
+                    if (!el || el.nodeType !== 1) return false;
+                    if (el.tagName.toLowerCase() === 'svg') return false; // aguardar remoção de circles separadamente
+                    const cs = getComputedStyle(el);
+                    const bg = (cs.backgroundColor||'').toLowerCase();
+                    const bgImg = (cs.backgroundImage||'').toLowerCase();
+                    const box = (cs.boxShadow||'').toLowerCase();
+                    const br = cs.borderRadius || '';
+                    const w = el.offsetWidth || parseFloat(cs.width) || 0;
+                    const h = el.offsetHeight || parseFloat(cs.height) || 0;
+                    const maxd = Math.max(w,h);
+                    if (maxd <= 0 || maxd > 56) return false; // pequeno
+                    const isRound = br.includes('%') || (/px/.test(br) && parseFloat(br) >= Math.min(w,h)/2 - 2);
+                    if (!isRound) return false;
+                    const redTest = s => s && (/red|ef4444|239, 68, 68|#ff0000|255, 0, 0/.test(s));
+                    const isRed = redTest(bg) || redTest(bgImg) || redTest(box) || (el.getAttribute && redTest(el.getAttribute('fill')));
+                    if (!isRed) return false;
+                    // excluir elementos com texto legível (cuidado para não remover badges com texto)
+                    if ((el.textContent || '').trim().length > 1) return false;
+                    // excluir inputs/buttons maiores
+                    if (el.tagName.match(/INPUT|BUTTON|A/)) return false;
+                    return true;
+                }catch(e){return false}
+            }
+
+            function removeMatches(root){
+                try{
+                    const removed = [];
+                    // svg circles
+                    Array.from(document.querySelectorAll('svg circle')).forEach(c => {
+                        try{
+                            const fill = (c.getAttribute('fill')||'').toLowerCase();
+                            if (/red|ef4444|#ff0000/.test(fill)) { removed.push(c); c.remove(); }
+                        }catch(e){}
+                    });
+
+                    Array.from(root.querySelectorAll('*')).forEach(el => {
+                        if (isSmallRoundRed(el)) { removed.push(el); el.remove(); }
+                    });
+
+                    if (removed.length) console.warn('[globalRemoveRedDots] Removed global red dot candidates', removed.map(e=>({tag:e.tagName, id:e.id, class:e.className})));
+                }catch(e){console.warn('[globalRemoveRedDots] error',e)}
+            }
+
+            // rodar imediatamente e novamente depois para capturar inserções
+            removeMatches(document);
+            setTimeout(()=>removeMatches(document), 100);
+            setTimeout(()=>removeMatches(document), 400);
+
+            // Observer no document.body para remoções dinâmicas
+            try{
+                const obs = new MutationObserver((muts)=>{
+                    muts.forEach(m=>{ Array.from(m.addedNodes||[]).forEach(node=>{ if (node && node.nodeType===1){ if (isSmallRoundRed(node)) { console.warn('[globalRemoveRedDots] Removed dynamic', node); node.remove(); } Array.from(node.querySelectorAll('*')).forEach(el=>{ if (isSmallRoundRed(el)) { console.warn('[globalRemoveRedDots] Removed dynamic descendant', el); el.remove(); } }); } }); });
+                });
+                obs.observe(document.body, { childList: true, subtree: true });
+                window.__globalRedDotsObserver = obs;
+            }catch(e){console.warn('[globalRemoveRedDots] observer failed', e)}
+        })();
+        
+        // Diagnóstico robusto: identificar e registrar no console os elementos que criam a bolinha vermelha (para depuração)
+        (function diagnoseAndRemoveRedDots(container){
+            if (window.__disableRedDotCleanup) { console.log('[redDotCleanup] diagnoseAndRemoveRedDots skipped'); return; }
+            function getDomPath(el){
+                if (!el) return '';
+                const parts = [];
+                while (el && el.nodeType === 1 && el.tagName.toLowerCase() !== 'html'){
+                    let part = el.tagName.toLowerCase();
+                    if (el.id) part += `#${el.id}`;
+                    if (el.classList && el.classList.length) part += `.${Array.from(el.classList).slice(0,3).join('.')}`;
+                    parts.unshift(part);
+                    el = el.parentNode;
+                }
+                return parts.join(' > ');
+            }
+
+            function infoFor(el){
+                try{
+                    const cs = window.getComputedStyle(el);
+                    return {
+                        nodeName: el.nodeName,
+                        id: el.id || null,
+                        classList: el.className || null,
+                        path: getDomPath(el),
+                        outerHTML: (el.outerHTML||'').slice(0,240),
+                        computed: {
+                            backgroundColor: cs.backgroundColor,
+                            backgroundImage: cs.backgroundImage,
+                            boxShadow: cs.boxShadow,
+                            border: cs.border,
+                            width: cs.width,
+                            height: cs.height,
+                            borderRadius: cs.borderRadius,
+                            position: cs.position
+                        }
+                    };
+                }catch(e){ return { nodeName: el.nodeName, error: String(e) } }
+            }
+
+            function isSmallCircularRed(el){
+                try{
+                    const cs = getComputedStyle(el);
+                    const bg = (cs.backgroundColor || '').toLowerCase();
+                    const bgImg = (cs.backgroundImage || '').toLowerCase();
+                    const box = (cs.boxShadow || '').toLowerCase();
+                    const border = (cs.border || '').toLowerCase();
+                    const w = parseFloat(cs.width) || el.offsetWidth || 0;
+                    const h = parseFloat(cs.height) || el.offsetHeight || 0;
+                    const br = cs.borderRadius || '';
+
+                    const isSmall = (Math.max(w,h) > 0) && Math.max(w,h) <= 30; // pequeno
+                    const isRound = br.includes('%') || (/px/.test(br) && parseFloat(br) >= Math.min(w,h)/2 - 1);
+                    const redPatterns = [/ef4444/, /239, 68, 68/, /255, 0, 0/, /#ff0000/, /rgb\(239, 68, 68\)/, /\bred\b/];
+                    const matchesPattern = s => redPatterns.some(rx => rx.test(s || ''));
+
+                    const isRedBg = bg && matchesPattern(bg);
+                    const isRedBgImg = bgImg && matchesPattern(bgImg) || (bgImg && bgImg.includes('radial-gradient') && bgImg.includes('red'));
+                    const isRedBox = box && matchesPattern(box);
+                    const isRedBorder = border && matchesPattern(border);
+
+                    return isSmall && isRound && (isRedBg || isRedBgImg || isRedBox || isRedBorder);
+                }catch(e){return false}
+            }
+
+            function checkPseudo(el, pseudo){
+                try{
+                    const cs = getComputedStyle(el, pseudo);
+                    if (!cs) return null;
+                    // Não exigir content: pseudo-elements podem usar content: '' e ainda desenhar com background/box-shadow
+                    const bg = (cs.backgroundColor||'').toLowerCase();
+                    const bgImg = (cs.backgroundImage||'').toLowerCase();
+                    const box = (cs.boxShadow||'').toLowerCase();
+                    const w = parseFloat(cs.width)||0; const h = parseFloat(cs.height)||0; const br = cs.borderRadius||'';
+                    const isSmall = (Math.max(w,h)>0) && Math.max(w,h) <= 36;
+                    const isRound = br.includes('%') || (/px/.test(br) && parseFloat(br) >= Math.min(w,h)/2 - 1);
+                    const redTest = s => s && (/red|ef4444|239, 68, 68|#ff0000|255, 0, 0/.test(s));
+                    const isRed = redTest(bg) || redTest(bgImg) || redTest(box);
+
+                    if (isSmall && isRound && isRed) {
+                        // Marcar o elemento para esconder seu pseudo-elemento via CSS (atributo único)
+                        try{
+                            el.setAttribute('data-hide-pseudo', '1');
+                            if (!document.getElementById('hide-pseudo-styles')){
+                                const s = document.createElement('style');
+                                s.id = 'hide-pseudo-styles';
+                                s.textContent = '[data-hide-pseudo="1"]::before, [data-hide-pseudo="1"]::after { display: none !important; content: none !important; background: transparent !important; background-image: none !important; box-shadow: none !important; }';
+                                document.head.appendChild(s);
+                            }
+                        }catch(e){}
+                        return { el, pseudo, cs: { background: bg, backgroundImage: bgImg, boxShadow: box, width: cs.width, height: cs.height, borderRadius: cs.borderRadius } };
+                    }
+                    return null;
+                }catch(e){return null}
+            }
+
+            const found = [];
+
+            // procurar por SVG circles com fill vermelho
+            Array.from(container.querySelectorAll('svg circle')).forEach(c => {
+                try{
+                    const fill = c.getAttribute('fill') || getComputedStyle(c).fill || '';
+                    if (fill && /red|ef4444|#ff0000/.test(fill.toLowerCase())){
+                        found.push({type: 'svg-circle', info: infoFor(c), el: c});
+                        c.remove();
+                    }
+                }catch(e){}
+            });
+
+            // procurar por elementos pequenos, arredondados e vermelhos, incluindo background-image/box-shadow/border
+            Array.from(container.querySelectorAll('*')).forEach(el => {
+                if (el.id === 'notaNumero' || el.id === 'notaData') return; // pular textos da nota
+                // priorizar classes conhecidas
+                if (el.classList && (el.classList.contains('status-dot') || el.id === 'cartBadge')){
+                    found.push({type:'known', info: infoFor(el), el}); el.remove(); return;
+                }
+
+                // checar pseudo-elements
+                const before = checkPseudo(el, '::before');
+                const after = checkPseudo(el, '::after');
+                if (before) { found.push({type:'pseudo-before', info: infoFor(el), detail: before}); }
+                if (after) { found.push({type:'pseudo-after', info: infoFor(el), detail: after}); }
+
+                if (isSmallCircularRed(el)) { found.push({type:'heuristic', info: infoFor(el), el}); el.style.display = 'none'; }
+
+                // adicional: detectar e remover elementos com background-image radial-gradient contendo 'red'
+                try{
+                    const cs = getComputedStyle(el);
+                    const bgImg = (cs.backgroundImage||'').toLowerCase();
+                    if (bgImg && bgImg.includes('radial-gradient') && bgImg.includes('red')){ found.push({type:'bg-image', info: infoFor(el)}); el.style.display='none'; }
+                    const box = (cs.boxShadow||'').toLowerCase();
+                    if (box && /rgba?\([0-9,\s]+\)/.test(box) && /,\s*0\s*,\s*0/.test(box) === false && /239\s*,\s*68\s*,\s*68|255\s*,\s*0\s*,\s*0|ef4444/.test(box)){ found.push({type:'box-shadow', info: infoFor(el)}); el.style.display='none'; }
+                }catch(e){}
+            });
+
+            if (found.length){
+                console.warn('%c[diagnoseAndRemoveRedDots] Found and removed red dot candidates:', 'color: orange; font-weight: bold;', found.map(f=>f.info));
+            } else {
+                console.log('%c[diagnoseAndRemoveRedDots] No red dot candidates found on initial scan', 'color: green;');
+            }
+
+            // observer para mudanças dinâmicas, também registra matches
+            const observer = new MutationObserver(mutations => {
+                mutations.forEach(m => {
+                    Array.from(m.addedNodes||[]).forEach(node => {
+                        if (node.nodeType !== 1) return;
+                        try{
+                            if (isSmallCircularRed(node)) { console.warn('[diagnose] Removed dynamic red dot', infoFor(node)); node.remove(); }
+                            Array.from(node.querySelectorAll('*')).forEach(el => { if (isSmallCircularRed(el)) { console.warn('[diagnose] Removed dynamic red dot (descendant)', infoFor(el)); el.remove(); } });
+                            // checar background-image e box-shadow dinâmicos
+                            const cs = getComputedStyle(node);
+                            if ((cs.backgroundImage||'').toLowerCase().includes('radial-gradient') && (cs.backgroundImage||'').toLowerCase().includes('red')){ console.warn('[diagnose] Removed dynamic bg-image red', infoFor(node)); node.remove(); }
+                            if ((cs.boxShadow||'').toLowerCase().match(/239|ef4444|255/)){ console.warn('[diagnose] Removed dynamic box-shadow red', infoFor(node)); node.remove(); }
+                        }catch(e){}
+                    });
+                });
+            });
+            observer.observe(container, { childList: true, subtree: true });
+            container.__diagnoseRedDotsObserver = observer;
+            window.__lastRedDotDiagnostics = found;
+        })(overlay);
         
         // Aplicar estilos ao overlay
         overlay.style.cssText = `
@@ -803,15 +1182,71 @@ window.abrirPedidoModal = function(id) {
             right: 0 !important;
             bottom: 0 !important;
             width: 100vw !important;
-            height: 100vh !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            z-index: 99999 !important;
-            background-color: rgba(0, 0, 0, 0.7) !important;
-            padding: 1rem !important;
-            overflow: auto !important;
+            z-index: 9000 !important;
         `;
+
+        // Varredura por posição: inspecionar elemento no canto superior-direito do overlay (client coordinates)
+        if (window.__disableRedDotCleanup) {
+            console.log('[redDotCleanup] posScan skipped');
+        } else {
+            try {
+                const rect = overlay.getBoundingClientRect();
+                // pontos de amostragem próximos ao canto superior-direito, ajustar offsets se necessário
+                const samplePoints = [
+                    {x: Math.round(rect.right - 12), y: Math.round(rect.top + 18)},
+                    {x: Math.round(rect.right - 24), y: Math.round(rect.top + 24)},
+                    {x: Math.round(rect.right - 6), y: Math.round(rect.top + 6)}
+                ];
+
+                const seen = new Set();
+                for (const pt of samplePoints) {
+                    const el = document.elementFromPoint(pt.x, pt.y) || document.elementFromPoint(pt.x - 1, pt.y - 1);
+                    if (!el) continue;
+                    const target = (el.nodeType === 3) ? el.parentElement : el;
+                    if (!target || seen.has(target)) continue;
+                    seen.add(target);
+
+                    // Se elemento for o overlay em si, verificar descendente mais próximo
+                    let candidate = target;
+                    // Subida até um elemento visível que não seja overlay
+                    while (candidate && candidate !== document.body && candidate !== overlay && candidate.parentElement && candidate.getBoundingClientRect) {
+                        const cr = candidate.getBoundingClientRect();
+                        if ((cr.width && cr.height) && (cr.width <= 60 && cr.height <= 60) && (cr.top >= rect.top - 4 && cr.left >= rect.left)) break;
+                        if (candidate === overlay) break;
+                        candidate = candidate.parentElement;
+                    }
+
+                    const info = {
+                        tag: candidate.tagName,
+                        id: candidate.id,
+                        classes: candidate.className,
+                        outerHTML: (candidate.outerHTML||'').slice(0,240),
+                        rect: candidate.getBoundingClientRect().toJSON()
+                    };
+                    // tornar disponível para leitura programática
+                    window.__lastPosScan = info;
+                    console.warn('[posScan] elementFromPoint at modal corner ->', info);
+
+                    // Ação corretiva explícita: esconder pseudo-elem e remover elemento pequeno/visível
+                    try {
+                        // se tiver pseudo, marcar para esconder
+                        candidate.setAttribute('data-hide-pseudo', '1');
+                        if (!document.getElementById('hide-pseudo-styles')){
+                            const s = document.createElement('style'); s.id = 'hide-pseudo-styles';
+                            s.textContent = '[data-hide-pseudo="1"]::before, [data-hide-pseudo="1"]::after { display: none !important; content: none !important; background: transparent !important; background-image: none !important; box-shadow: none !important; }';
+                            document.head.appendChild(s);
+                        }
+                        // esconder o próprio elemento caso seja pequeno e esteja exatamente no canto
+                        const cr = candidate.getBoundingClientRect();
+                        if (Math.max(cr.width, cr.height) <= 64) {
+                            candidate.style.display = 'none';
+                            console.warn('[posScan] hid candidate directly', info);
+                        }
+                    } catch (e) { console.warn('posScan action failed', e); }
+                }
+            } catch(e){ console.warn('posScan top-right scan failed', e); }
+        }
+        
         
         console.log('%c✅ OVERLAY DINÂMICO CRIADO!', 'color: green; font-weight: bold;');
         console.log('%c📊 getBoundingClientRect:', 'color: purple;', overlay.getBoundingClientRect());
@@ -861,19 +1296,80 @@ window.salvarPedidoChanges = async function() {
 
         // Mostrar sucesso
         showSuccessModal('✅ Salvo!', 'As anotações foram salvas com sucesso');
-        
-        // Fechar modal automaticamente após 1s
-        setTimeout(() => {
-            console.log('%c🔄 Fechando modal...', 'color: magenta;');
-            closePedidoModal();
-            
-            // Recarregar pedidos em background
-            loadPedidos();
-        }, 1000);
+        // Não fechar o modal da nota automaticamente: deixar o usuário confirmar
+        // Quando o usuário clicar em OK no successModal, o closeSuccessModal
+        // verificará a flag e fechará o modal da nota e recarregará os pedidos.
+        window.__afterSuccessClosePedido = true;
 
     } catch (error) {
         console.error('%c❌ Erro:', 'color: red;', error);
         showSuccessModal('❌ Erro', 'Não foi possível salvar. Tente novamente.');
+    }
+};
+
+// Aplicar nota instantaneamente quando admin clicar em um status (APENAS altera/atualiza a área de notas)
+window.aplicarNotaStatusInstantanea = function(novoStatus, descricao){
+    try{
+        if (!currentPedidoId) { console.error('Nenhum pedido aberto para aplicar nota'); return; }
+
+        const notesEl = document.getElementById('pedidoNotes');
+        if (!notesEl) { console.error('Campo de notas não encontrado'); return; }
+
+        // Mapear textos amigáveis
+        const map = { 'cancelado': 'Pedido Cancelado', 'pendente': 'Pendente', 'pago': 'Pagamento Confirmado' };
+        const texto = map[novoStatus] || descricao || novoStatus;
+
+        // Aplicar no textarea imediatamente
+        notesEl.value = texto;
+
+        // Atualizar em memória para refletir imediatamente
+        const pedido = allPedidos.find(p => String(p.id) === String(currentPedidoId));
+        if (pedido) pedido.notes = notesEl.value;
+
+        // Salvar imediatamente (reaproveita função existente que persiste notes)
+        // Isso não altera payment_status no servidor — apenas notes.
+        salvarPedidoChanges();
+    }catch(e){ console.error('Erro ao aplicar nota instantânea', e); }
+};
+
+// Aplicar alteração de payment_status instantaneamente: atualizar servidor, mostrar confirmação e fechar modal após OK
+window.aplicarStatusPagamentoInstantaneo = async function(novoStatus, descricao){
+    try{
+        if (!currentPedidoId) { console.error('Nenhum pedido aberto para alterar status'); return; }
+
+        const pedidoId = currentPedidoId;
+        console.log('%c🔄 Aplicando status instantâneo:', 'color: blue; font-weight: bold;', novoStatus, 'ID:', pedidoId);
+
+        // Enviar atualização ao servidor
+        const res = await fetch(`${API_URL}/pedidos/${pedidoId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ payment_status: novoStatus })
+        });
+
+        if (!res.ok) {
+            const errText = await res.text().catch(()=>null);
+            console.error('Erro ao atualizar status no servidor', res.status, errText);
+            showSuccessModal('❌ Erro', 'Não foi possível alterar o status.');
+            return;
+        }
+
+        // Atualizar em memória
+        const pedido = allPedidos.find(p => String(p.id) === String(pedidoId));
+        if (pedido) {
+            pedido.payment_status = novoStatus;
+        }
+
+        // Exibir mensagem de sucesso e marcar fechamento pós-OK
+        showSuccessModal('✅ Status alterado!', `Status atualizado para: ${descricao || novoStatus}`);
+        window.__afterSuccessClosePedido = true;
+
+        // Opcional: também atualizar visual do modal atual (background/label)
+        try{ abrirPedidoModal(pedidoId); }catch(e){}
+
+    }catch(e){
+        console.error('Erro em aplicarStatusPagamentoInstantaneo', e);
+        showSuccessModal('❌ Erro', 'Não foi possível alterar o status.');
     }
 };
 
