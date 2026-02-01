@@ -223,9 +223,9 @@ function renderProducts(list) {
           ${units.map(unit => {
             const price = product.prices?.[unit] || product.price;
             return `
-              <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 8px; padding: 8px 12px; text-align: center; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);">
-                <p style="color: white; font-size: 10px; font-weight: 600; opacity: 0.9; margin-bottom: 4px;">${unit.toUpperCase()}</p>
-                <p style="color: white; font-size: 14px; font-weight: 700;">${formatPrice(price)}</p>
+              <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 8px; padding: 10px 12px; text-align: center; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);">
+                <p style="color: white; font-size: 13px; font-weight: 700; opacity: 0.95; margin-bottom: 6px; letter-spacing: 0.5px;">${unit.toUpperCase()}</p>
+                <p style="color: white; font-size: 18px; font-weight: 700;">${formatPrice(price)}</p>
               </div>
             `;
           }).join('')}
