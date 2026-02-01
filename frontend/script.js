@@ -831,15 +831,16 @@ function closePedidoModal() {
 window.closePedidoModal = closePedidoModal;
 
 window.salvarPedidoChanges = async function() {
-    if (!currentPedidoId) return;
-
-    const pedido = allPedidos.find(p => p.id === currentPedidoId);
-    if (!pedido) return;
+    if (!currentPedidoId) {
+        console.error('Nenhum pedido aberto');
+        return;
+    }
 
     const status = document.getElementById('pedidoStatus').value;
     const notes = document.getElementById('pedidoNotes').value;
 
-    // Atualizar no backend
+    console.log('%c💾 Salvando alterações do pedido...', 'color: blue; font-weight: bold;');
+
     try {
         const response = await fetch(`${API_URL}/pedidos/${currentPedidoId}`, {
             method: 'PUT',
@@ -848,45 +849,43 @@ window.salvarPedidoChanges = async function() {
         });
 
         if (!response.ok) {
-            throw new Error('Erro ao atualizar no backend');
+            throw new Error('Erro ao atualizar no servidor');
         }
 
-        console.log('✅ Pedido atualizado no backend');
+        console.log('%c✅ Salvo no servidor', 'color: green; font-weight: bold;');
 
-        // Atualizar em localStorage
-        let orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
-        const orderIndex = orders.findIndex(o => o.id === currentPedidoId);
-        if (orderIndex >= 0) {
-            orders[orderIndex].status = status;
-            orders[orderIndex].notes = notes;
-            localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
-            console.log('✅ Pedido atualizado no localStorage');
+        // Atualizar em memória
+        const pedido = allPedidos.find(p => p.id === currentPedidoId);
+        if (pedido) {
+            pedido.status = status;
+            pedido.notes = notes;
         }
 
-        // Mostrar sucesso IMEDIATAMENTE
-        showSuccessModal('✅ Alterações Salvas!', 'As mudanças do pedido foram salvas com sucesso!');
+        // Mostrar sucesso
+        showSuccessModal('✅ Salvo!', 'As alterações foram salvas com sucesso');
         
-        // Recarregar em background e manter modal aberto para o admin confirmar
-        await loadPedidos();
-        
-        // Fechar apenas após confirmação visual do sucesso
-        // O admin fechará manualmente se desejar
+        // Recarregar pedidos
+        setTimeout(() => {
+            loadPedidos();
+        }, 1000);
+
     } catch (error) {
-        console.error('❌ Erro ao salvar:', error);
-        showSuccessModal('⚠️ Erro', 'Não foi possível salvar as alterações. Tente novamente.');
+        console.error('%c❌ Erro:', 'color: red;', error);
+        showSuccessModal('❌ Erro', 'Não foi possível salvar. Tente novamente.');
     }
 };
 
 // Variáveis globais para confirmação
 let statusPagamentoEmAlterar = null;
-let textoStatusPagamento = '';
+let currentPedidoIdEmAlteracao = null;
 
 // Preparar confirmação para mudar status de pagamento
 window.preparaConfirmacaoPagamento = function(novoStatus, descricao) {
-    console.log('%c🔔 Preparando confirmação para status:', 'color: blue; font-weight: bold;', novoStatus);
+    console.log('%c🔔 Admin clicou em:', 'color: blue; font-weight: bold;', novoStatus);
     
+    // Salvar valores
     statusPagamentoEmAlterar = novoStatus;
-    textoStatusPagamento = descricao;
+    currentPedidoIdEmAlteracao = currentPedidoId;
     
     const statusMap = {
         'cancelado': '❌ Pedido Cancelado',
@@ -894,135 +893,106 @@ window.preparaConfirmacaoPagamento = function(novoStatus, descricao) {
         'pago': '✅ Pagamento Confirmado'
     };
     
-    // Criar ou atualizar modal de confirmação
+    // Criar modal de confirmação (sobreposto a tudo)
     let confirmModal = document.getElementById('confirmacaoPagamentoModalIndependente');
+    if (confirmModal) confirmModal.remove();
     
-    if (!confirmModal) {
-        confirmModal = document.createElement('div');
-        confirmModal.id = 'confirmacaoPagamentoModalIndependente';
-        document.body.appendChild(confirmModal);
-    }
+    confirmModal = document.createElement('div');
+    confirmModal.id = 'confirmacaoPagamentoModalIndependente';
     
-    confirmModal.innerHTML = `
-        <div style="
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            right: 0 !important;
-            bottom: 0 !important;
-            background: rgba(0, 0, 0, 0.5) !important;
-            display: flex !important;
-            align-items: center !important;
-            justify-content: center !important;
-            z-index: 999999 !important;
-            padding: 1rem !important;
-        ">
-            <div style="
-                background: white !important;
-                border-radius: 12px !important;
-                box-shadow: 0 20px 25px rgba(0, 0, 0, 0.3) !important;
-                max-width: 400px !important;
-                width: 100% !important;
-                padding: 2rem !important;
-                text-align: center !important;
-            ">
-                <h3 style="font-size: 1.25rem; font-weight: bold; color: #1f2937; margin-bottom: 1rem;">⚠️ Confirmar Mudança</h3>
-                <p style="color: #6b7280; margin-bottom: 0.5rem;">Tem certeza que deseja alterar o status para:</p>
-                <p style="font-weight: bold; font-size: 1.125rem; color: #374151; margin-bottom: 2rem;">${statusMap[novoStatus] || descricao}</p>
-                <div style="display: flex; gap: 1rem; flex-direction: column;">
-                    <button onclick="confirmarMudancaStatusPagamento()" style="
-                        background: #10b981 !important;
-                        color: white !important;
-                        padding: 0.75rem 1.5rem !important;
-                        border: none !important;
-                        border-radius: 8px !important;
-                        font-weight: bold !important;
-                        font-size: 1rem !important;
-                        cursor: pointer !important;
-                        transition: background 0.2s !important;
-                    " onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10b981'">
+    const html = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; align-items: center; justify-content: center; z-index: 999999; font-family: Arial, sans-serif;">
+            <div style="background: white; border-radius: 12px; padding: 2rem; max-width: 400px; box-shadow: 0 10px 40px rgba(0,0,0,0.3); animation: slideIn 0.3s ease-out;">
+                <h3 style="margin: 0 0 1rem 0; font-size: 1.3rem; font-weight: bold; color: #333;">⚠️ Confirmar?</h3>
+                <p style="margin: 0 0 0.5rem 0; color: #666; font-size: 0.95rem;">Alterar status para:</p>
+                <p style="margin: 0 0 2rem 0; font-weight: bold; color: #333; font-size: 1.1rem;">${statusMap[novoStatus] || descricao}</p>
+                <div style="display: flex; gap: 1rem;">
+                    <button id="btnConfirmarStatus" style="flex: 1; padding: 0.75rem; background: #10b981; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.95rem;">
                         ✅ Confirmar
                     </button>
-                    <button onclick="cancelarConfirmacao()" style="
-                        background: #ef4444 !important;
-                        color: white !important;
-                        padding: 0.75rem 1.5rem !important;
-                        border: none !important;
-                        border-radius: 8px !important;
-                        font-weight: bold !important;
-                        font-size: 1rem !important;
-                        cursor: pointer !important;
-                        transition: background 0.2s !important;
-                    " onmouseover="this.style.background='#dc2626'" onmouseout="this.style.background='#ef4444'">
+                    <button id="btnCancelarStatus" style="flex: 1; padding: 0.75rem; background: #ef4444; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 0.95rem;">
                         ❌ Cancelar
                     </button>
                 </div>
             </div>
         </div>
+        <style>
+            @keyframes slideIn {
+                from { transform: scale(0.9); opacity: 0; }
+                to { transform: scale(1); opacity: 1; }
+            }
+        </style>
     `;
     
-    console.log('%c✅ Modal de confirmação criado:', 'color: green; font-weight: bold;');
+    confirmModal.innerHTML = html;
+    document.body.appendChild(confirmModal);
+    
+    // Adicionar listeners aos botões
+    document.getElementById('btnConfirmarStatus').addEventListener('click', confirmarMudancaStatusPagamento);
+    document.getElementById('btnCancelarStatus').addEventListener('click', cancelarConfirmacao);
+    
+    console.log('%c✅ Modal de confirmação exibido', 'color: green; font-weight: bold;');
 };
 
 // Confirmar e executar mudança de status
 window.confirmarMudancaStatusPagamento = function() {
-    if (!statusPagamentoEmAlterar || !currentPedidoId) {
-        console.error('%c❌ Erro: Status ou ID do pedido ausente', 'color: red;');
-        alert('❌ Erro ao processar a confirmação');
+    if (!statusPagamentoEmAlterar || !currentPedidoIdEmAlteracao) {
+        console.error('%c❌ Dados ausentes', 'color: red;');
+        alert('Erro ao processar. Tente novamente.');
         return;
     }
     
-    console.log('%c💰 Confirmando mudança de status:', 'color: blue; font-weight: bold;', statusPagamentoEmAlterar);
+    console.log('%c🔄 Enviando atualização:', 'color: blue; font-weight: bold;', statusPagamentoEmAlterar);
     
-    // Fechar modal de confirmação imediatamente
+    // Fechar modal de confirmação
     cancelarConfirmacao();
     
-    // Atualizar no backend
-    fetch(`${API_URL}/pedidos/${currentPedidoId}`, {
+    // Enviar para servidor
+    fetch(`${API_URL}/pedidos/${currentPedidoIdEmAlteracao}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ payment_status: statusPagamentoEmAlterar })
     })
-    .then(response => {
-        if (!response.ok) throw new Error('Erro ao atualizar no backend');
-        console.log('%c✅ Status atualizado no backend', 'color: green; font-weight: bold;');
+    .then(res => {
+        if (!res.ok) throw new Error('Erro ao atualizar');
+        console.log('%c✅ Status atualizado no servidor', 'color: green; font-weight: bold;');
         
-        // Atualizar em localStorage também
-        let orders = JSON.parse(localStorage.getItem('hortifruti_orders') || '[]');
-        const orderIndex = orders.findIndex(o => o.id == currentPedidoId || o.id === currentPedidoId || String(o.id) === String(currentPedidoId));
-        if (orderIndex >= 0) {
-            orders[orderIndex].payment_status = statusPagamentoEmAlterar;
-            localStorage.setItem('hortifruti_orders', JSON.stringify(orders));
-            console.log('%c✅ LocalStorage atualizado', 'color: green;');
+        // Atualizar em memória
+        const pedido = allPedidos.find(p => p.id == currentPedidoIdEmAlteracao);
+        if (pedido) {
+            pedido.payment_status = statusPagamentoEmAlterar;
         }
         
-        const statusMap = {
-            'cancelado': 'Pedido Cancelado',
-            'pendente': 'Pagamento Pendente',
-            'pago': 'Pagamento Confirmado'
+        // Mostrar sucesso
+        const statusNome = {
+            'cancelado': 'Cancelado',
+            'pendente': 'Pendente',
+            'pago': 'Pago'
         };
         
-        // Mostrar sucesso
-        showSuccessModal('✅ Status Atualizado!', `${statusMap[statusPagamentoEmAlterar] || 'Status'} registrado com sucesso!`);
+        showSuccessModal('✅ Salvo!', `Status alterado para ${statusNome[statusPagamentoEmAlterar]}`);
         
-        // Recarregar dados
-        loadPedidos();
+        // Recarregar pedidos
+        setTimeout(() => {
+            loadPedidos();
+        }, 1000);
     })
-    .catch(error => {
-        console.error('%c❌ Erro ao alterar status:', 'color: red; font-weight: bold;', error);
-        showSuccessModal('⚠️ Erro', 'Não foi possível salvar no banco de dados. Tente novamente.');
+    .catch(err => {
+        console.error('%c❌ Erro ao salvar:', 'color: red;', err);
+        showSuccessModal('❌ Erro', 'Não foi possível salvar. Tente novamente.');
     });
 };
 
 // Cancelar confirmação
 window.cancelarConfirmacao = function() {
-    console.log('%c❌ Cancelando confirmação', 'color: orange;');
-    statusPagamentoEmAlterar = null;
-    textoStatusPagamento = '';
+    console.log('%c❌ Confirmação cancelada', 'color: orange;');
     
-    const confirmModal = document.getElementById('confirmacaoPagamentoModalIndependente');
-    if (confirmModal) {
-        confirmModal.remove();
+    statusPagamentoEmAlterar = null;
+    currentPedidoIdEmAlteracao = null;
+    
+    const modal = document.getElementById('confirmacaoPagamentoModalIndependente');
+    if (modal) {
+        modal.remove();
     }
 };
 
