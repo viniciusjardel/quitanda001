@@ -754,8 +754,9 @@ window.abrirPedidoModal = function(id) {
     if (deveMostrarBotoes) {
         areaBotoes.classList.remove('hidden');
         
-        // Determinar qual botão está ativo
-        const statusAtual = pedido.payment_status || 'pendente';
+        // Determinar qual botão está ativo (normalizar valor)
+        let statusAtual = (pedido.payment_status || 'pendente').toLowerCase().trim();
+        console.log('%c🔍 Status Atual:', 'color: cyan;', 'Raw:', pedido.payment_status, 'Normalizado:', statusAtual);
         
         document.getElementById('botoesStatusPagamento').innerHTML = `
             <button class="w-full p-3 rounded-lg font-bold transition ${statusAtual === 'cancelado' ? 'bg-red-500 text-white border-2 border-red-700' : 'bg-red-100 text-red-800 hover:bg-red-200'}" onclick="preparaConfirmacaoPagamento('cancelado', 'Pedido Cancelado')">
@@ -959,7 +960,7 @@ window.confirmarMudancaStatusPagamento = function() {
     }
     
     const pedidoId = currentPedidoIdEmAlteracao;
-    const novoStatus = statusPagamentoEmAlterar;
+    const novoStatus = statusPagamentoEmAlterar.toLowerCase().trim();
     
     console.log('%c🔄 Enviando atualização:', 'color: blue; font-weight: bold;', novoStatus, 'ID:', pedidoId);
     
@@ -976,12 +977,12 @@ window.confirmarMudancaStatusPagamento = function() {
         if (!res.ok) throw new Error('Erro ao atualizar');
         console.log('%c✅ Status atualizado no servidor', 'color: green; font-weight: bold;');
         
-        // Atualizar em memória
-        const pedido = allPedidos.find(p => p.id == pedidoId);
+        // Atualizar em memória (normalizado)
+        const pedido = allPedidos.find(p => String(p.id) === String(pedidoId));
         if (pedido) {
-            console.log('%c📝 Atualizando pedido em memória:', 'color: cyan;', pedido.id);
+            console.log('%c📝 Atualizando pedido em memória:', 'color: cyan;', 'ID:', pedido.id);
             pedido.payment_status = novoStatus;
-            console.log('%c✅ Pedido atualizado em memória:', 'color: cyan;', pedido.payment_status);
+            console.log('%c✅ Pedido atualizado em memória:', 'color: cyan;', 'Status:', pedido.payment_status);
         } else {
             console.error('%c❌ Pedido não encontrado em memória:', 'color: red;', pedidoId);
         }
