@@ -773,7 +773,6 @@ window.abrirPedidoModal = function(id) {
     }
     
     // ===== PREENCHER OUTROS CAMPOS =====
-    document.getElementById('pedidoStatus').value = pedido.status;
     document.getElementById('pedidoNotes').value = pedido.notes || '';
     
     // ===== EXIBIR MODAL =====
@@ -836,16 +835,15 @@ window.salvarPedidoChanges = async function() {
         return;
     }
 
-    const status = document.getElementById('pedidoStatus').value;
     const notes = document.getElementById('pedidoNotes').value;
 
-    console.log('%c💾 Salvando alterações do pedido...', 'color: blue; font-weight: bold;');
+    console.log('%c💾 Salvando anotações do pedido...', 'color: blue; font-weight: bold;');
 
     try {
         const response = await fetch(`${API_URL}/pedidos/${currentPedidoId}`, {
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ status: status, notes: notes })
+            body: JSON.stringify({ notes: notes })
         });
 
         if (!response.ok) {
@@ -857,12 +855,11 @@ window.salvarPedidoChanges = async function() {
         // Atualizar em memória
         const pedido = allPedidos.find(p => p.id === currentPedidoId);
         if (pedido) {
-            pedido.status = status;
             pedido.notes = notes;
         }
 
         // Mostrar sucesso
-        showSuccessModal('✅ Salvo!', 'As alterações foram salvas com sucesso');
+        showSuccessModal('✅ Salvo!', 'As anotações foram salvas com sucesso');
         
         // Fechar modal automaticamente após 1s
         setTimeout(() => {
