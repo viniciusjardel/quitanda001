@@ -496,7 +496,7 @@ app.put('/pedidos/:id', async (req, res) => {
   }
 });
 
-// DELETE pedido
+// DELETE pedido específico
 app.delete('/pedidos/:id', async (req, res) => {
   try {
     await pool.query('DELETE FROM pedidos WHERE id = $1', [req.params.id]);
@@ -505,6 +505,18 @@ app.delete('/pedidos/:id', async (req, res) => {
   } catch (error) {
     console.error('❌ Erro ao deletar pedido:', error);
     res.status(500).json({ error: 'Erro ao deletar pedido' });
+  }
+});
+
+// DELETE todos os pedidos (LIMPAR BANCO DE DADOS)
+app.delete('/pedidos', async (req, res) => {
+  try {
+    const result = await pool.query('DELETE FROM pedidos');
+    console.log('%c🗑️ TODOS OS PEDIDOS DELETADOS!', 'color: red; font-weight: bold;', `Linhas afetadas: ${result.rowCount}`);
+    res.json({ message: `${result.rowCount} pedidos deletados com sucesso`, deleted: result.rowCount });
+  } catch (error) {
+    console.error('❌ Erro ao deletar todos os pedidos:', error);
+    res.status(500).json({ error: 'Erro ao deletar pedidos' });
   }
 });
 

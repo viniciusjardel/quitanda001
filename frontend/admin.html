@@ -121,7 +121,12 @@
             <div class="bg-white rounded-xl shadow-lg p-6 mb-6">
                 <div class="flex justify-between items-center mb-6">
                     <h2 class="text-2xl font-bold text-gray-800">Gerenciar Pedidos</h2>
-                    <input type="text" id="pedidosSearch" placeholder="🔍 Buscar por cliente, telefone..." class="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-600 focus:outline-none">
+                    <div class="flex gap-3">
+                        <input type="text" id="pedidosSearch" placeholder="🔍 Buscar por cliente, telefone..." class="px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-600 focus:outline-none">
+                        <button onclick="limparTodosPedidos()" class="bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded-lg font-semibold transition">
+                            🗑️ Limpar Todos
+                        </button>
+                    </div>
                 </div>
 
                 <div class="grid grid-cols-1 gap-4" id="pedidosList">

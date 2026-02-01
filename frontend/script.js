@@ -1010,7 +1010,51 @@ window.cancelarConfirmacao = function() {
     }
 };
 
-// Buscar pedidos
+// Limpar todos os pedidos
+window.limparTodosPedidos = function() {
+    const confirmacao = confirm('⚠️ ATENÇÃO!\n\nVocê tem certeza que deseja DELETAR TODOS OS PEDIDOS?\n\nEsta ação é IRREVERSÍVEL!');
+    
+    if (!confirmacao) {
+        console.log('❌ Operação cancelada pelo usuário');
+        return;
+    }
+    
+    const confirmar2 = prompt('Digite "LIMPAR" para confirmar a limpeza de todos os pedidos:');
+    
+    if (confirmar2 !== 'LIMPAR') {
+        console.log('❌ Confirmação incorreta, operação cancelada');
+        return;
+    }
+    
+    console.log('%c🗑️ Limpando todos os pedidos...', 'color: red; font-weight: bold;');
+    
+    fetch(`${API_URL}/pedidos`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' }
+    })
+    .then(res => {
+        if (!res.ok) throw new Error('Erro ao deletar');
+        return res.json();
+    })
+    .then(data => {
+        console.log('%c✅ Pedidos deletados com sucesso!', 'color: green; font-weight: bold;', data);
+        alert(`✅ Sucesso!\n\n${data.deleted} pedidos foram deletados.`);
+        
+        // Limpar lista em memória
+        allPedidos = [];
+        
+        // Recarregar a lista vazia
+        loadPedidos();
+    })
+    .catch(err => {
+        console.error('%c❌ Erro ao deletar:', 'color: red;', err);
+        alert('❌ Erro ao deletar os pedidos. Tente novamente.');
+    });
+};
+
+// =======================
+// BUSCAR PEDIDOS
+// =======================
 document.addEventListener('DOMContentLoaded', () => {
     const searchInput = document.getElementById('pedidosSearch');
     if (searchInput) {
