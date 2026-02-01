@@ -942,25 +942,32 @@ window.confirmarMudancaStatusPagamento = function() {
         return;
     }
     
-    console.log('%c🔄 Enviando atualização:', 'color: blue; font-weight: bold;', statusPagamentoEmAlterar);
+    const pedidoId = currentPedidoIdEmAlteracao;
+    const novoStatus = statusPagamentoEmAlterar;
+    
+    console.log('%c🔄 Enviando atualização:', 'color: blue; font-weight: bold;', novoStatus, 'ID:', pedidoId);
     
     // Fechar modal de confirmação
     cancelarConfirmacao();
     
     // Enviar para servidor
-    fetch(`${API_URL}/pedidos/${currentPedidoIdEmAlteracao}`, {
+    fetch(`${API_URL}/pedidos/${pedidoId}`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ payment_status: statusPagamentoEmAlterar })
+        body: JSON.stringify({ payment_status: novoStatus })
     })
     .then(res => {
         if (!res.ok) throw new Error('Erro ao atualizar');
         console.log('%c✅ Status atualizado no servidor', 'color: green; font-weight: bold;');
         
         // Atualizar em memória
-        const pedido = allPedidos.find(p => p.id == currentPedidoIdEmAlteracao);
+        const pedido = allPedidos.find(p => p.id == pedidoId);
         if (pedido) {
-            pedido.payment_status = statusPagamentoEmAlterar;
+            console.log('%c📝 Atualizando pedido em memória:', 'color: cyan;', pedido.id);
+            pedido.payment_status = novoStatus;
+            console.log('%c✅ Pedido atualizado em memória:', 'color: cyan;', pedido.payment_status);
+        } else {
+            console.error('%c❌ Pedido não encontrado em memória:', 'color: red;', pedidoId);
         }
         
         // Mostrar sucesso
@@ -970,12 +977,13 @@ window.confirmarMudancaStatusPagamento = function() {
             'pago': 'Pago'
         };
         
-        showSuccessModal('✅ Salvo!', `Status alterado para ${statusNome[statusPagamentoEmAlterar]}`);
+        showSuccessModal('✅ Salvo!', `Status alterado para ${statusNome[novoStatus]}`);
         
-        // Recarregar pedidos
+        // Reabrir modal após 1.5 segundos para mostrar atualização
         setTimeout(() => {
-            loadPedidos();
-        }, 1000);
+            console.log('%c🔄 Reabrindo modal do pedido...', 'color: magenta;');
+            abrirPedidoModal(pedidoId);
+        }, 1500);
     })
     .catch(err => {
         console.error('%c❌ Erro ao salvar:', 'color: red;', err);
