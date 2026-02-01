@@ -971,24 +971,13 @@ window.confirmarMudancaStatusPagamento = function() {
             console.error('%c❌ Pedido não encontrado em memória:', 'color: red;', pedidoId);
         }
         
-        // Mostrar sucesso
-        const statusNome = {
-            'cancelado': 'Cancelado',
-            'pendente': 'Pendente',
-            'pago': 'Pago'
-        };
-        
-        showSuccessModal('✅ Salvo!', `Status alterado para ${statusNome[novoStatus]}`);
-        
-        // Reabrir modal após 1.5 segundos para mostrar atualização
-        setTimeout(() => {
-            console.log('%c🔄 Reabrindo modal do pedido...', 'color: magenta;');
-            abrirPedidoModal(pedidoId);
-        }, 1500);
+        // Reabrir modal do pedido imediatamente com status atualizado
+        console.log('%c🔄 Reabrindo modal do pedido...', 'color: magenta;');
+        abrirPedidoModal(pedidoId);
     })
     .catch(err => {
         console.error('%c❌ Erro ao salvar:', 'color: red;', err);
-        showSuccessModal('❌ Erro', 'Não foi possível salvar. Tente novamente.');
+        alert('Erro ao atualizar status. Tente novamente.');
     });
 };
 
