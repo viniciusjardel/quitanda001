@@ -8,6 +8,23 @@ const API_URL = 'https://quitanda-produtos-api.onrender.com'; // Será atualizad
 // VARIÁVEIS GLOBAIS
 // =======================
 let products = [];
+
+// =======================
+// FUNÇÕES DE NOTIFICAÇÃO
+// =======================
+function showSuccessModal(title = 'Sucesso!', message = 'Operação realizada com sucesso!') {
+    const modal = document.getElementById('successModal');
+    document.getElementById('successTitle').textContent = title;
+    document.getElementById('successMessage').textContent = message;
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+}
+
+function closeSuccessModal() {
+    const modal = document.getElementById('successModal');
+    modal.classList.add('hidden');
+    modal.classList.remove('flex');
+}
 let editingProductId = null;
 let allPedidos = [];
 let currentPedidoId = null;
@@ -498,7 +515,7 @@ async function saveProduct(e) {
         }
         
         closeProductModal();
-        alert('✅ Produto salvo com sucesso!');
+        showSuccessModal('✅ Produto Salvo!', `O produto "${productName}" foi salvo com sucesso!`);
     } catch (error) {
         console.error('❌ Erro ao salvar:', error);
         console.error('📝 Dados que foram enviados:', productData);
@@ -525,10 +542,10 @@ async function deleteProduct(id) {
         
         // Recarregar produtos
         await loadData();
-        alert('✅ Produto excluído com sucesso!');
+        showSuccessModal('🗑️ Produto Excluído!', 'O produto foi removido com sucesso!');
     } catch (error) {
         console.error('❌ Erro ao deletar:', error);
-        alert(`❌ Erro ao deletar: ${error.message}`);
+        showSuccessModal('⚠️ Erro', `Não foi possível excluir o produto: ${error.message}`);
     }
 }
 
@@ -855,12 +872,12 @@ window.salvarPedidoChanges = async function() {
             console.log('✅ Pedido atualizado no localStorage');
         }
 
-        alert('✅ Alterações salvas com sucesso!');
+        showSuccessModal('✅ Alterações Salvas!', 'As mudanças do pedido foram salvas com sucesso!');
         closePedidoModal();
         loadPedidos();
     } catch (error) {
         console.error('❌ Erro ao salvar:', error);
-        alert('❌ Erro ao salvar alterações. Tente novamente.');
+        showSuccessModal('⚠️ Erro', 'Não foi possível salvar as alterações. Tente novamente.');
     }
 };
 
@@ -920,14 +937,14 @@ window.confirmarMudancaStatusPagamento = function() {
             'pago': 'Pagamento Confirmado'
         };
         
-        alert(`✅ ${statusMap[statusPagamentoEmAlterar] || 'Status'} registrado com sucesso!`);
+        showSuccessModal('✅ Status Atualizado!', `${statusMap[statusPagamentoEmAlterar] || 'Status'} registrado com sucesso!`);
         cancelarConfirmacao();
         loadPedidos();
         abrirPedidoModal(currentPedidoId); // Reabrir modal para mostrar mudanças
     })
     .catch(error => {
         console.error('%c❌ Erro ao alterar status:', 'color: red;', error);
-        alert('❌ Erro ao salvar no banco de dados. Tente novamente.');
+        showSuccessModal('⚠️ Erro', 'Não foi possível salvar no banco de dados. Tente novamente.');
     });
 };
 
