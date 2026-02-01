@@ -220,7 +220,7 @@ function openProductModal() {
     
     const requiredElements = [
         'modalTitle', 'productId', 'productName', 'productDescription', 
-        'productPrice', 'productImage', 'productImageFile',
+        'productImage', 'productImageFile',
         'productImageData', 'productColor', 'imagePreview', 'productModal'
     ];
     
@@ -241,7 +241,6 @@ function openProductModal() {
     document.getElementById('productId').value = '';
     document.getElementById('productName').value = '';
     document.getElementById('productDescription').value = '';
-    document.getElementById('productPrice').value = '';
     document.getElementById('productImage').value = '';
     document.getElementById('productImageFile').value = '';
     document.getElementById('productImageData').value = '';
@@ -283,7 +282,6 @@ function editProduct(id) {
     document.getElementById('productId').value = product.id;
     document.getElementById('productName').value = product.name;
     document.getElementById('productDescription').value = product.description || '';
-    document.getElementById('productPrice').value = product.price;
     document.getElementById('productImage').value = product.image;
     document.getElementById('productImageFile').value = '';
     document.getElementById('productImageData').value = '';
@@ -413,15 +411,9 @@ async function saveProduct(e) {
     }
     
     const productName = document.getElementById('productName').value;
-    const productPrice = parseFloat(document.getElementById('productPrice').value);
     
     if (!productName) {
         alert('⚠️ Por favor, preencha o nome do produto');
-        return;
-    }
-    
-    if (!productPrice || productPrice <= 0) {
-        alert('⚠️ Por favor, preencha um preço válido');
         return;
     }
     
@@ -460,7 +452,7 @@ async function saveProduct(e) {
         name: productName,
         description: document.getElementById('productDescription').value,
         category: document.getElementById('productCategory').value || null,
-        price: parseFloat(productPrice), // Garantir que é número
+        price: Object.values(unitPrices)[0], // Usar o primeiro preço como padrão
         prices: unitPrices,              // Novos preços por unidade
         unit: selectedUnits[0], // Manter compatibilidade com sistemas antigos
         units: selectedUnits,   // Nova estrutura com múltiplas unidades
@@ -473,10 +465,6 @@ async function saveProduct(e) {
     // Validação adicional
     if (!productData.name || productData.name.trim() === '') {
         alert('⚠️ Por favor, preencha o nome do produto');
-        return;
-    }
-    if (isNaN(productData.price) || productData.price <= 0) {
-        alert('⚠️ Preço inválido. Por favor, verifique o valor');
         return;
     }
     
