@@ -183,7 +183,6 @@ function updateUnitPricesFields(selectedUnits) {
         </div>
     `).join('');
 }
-}
 
 // Adicionar listeners aos checkboxes de unidades quando o modal abre
 document.addEventListener('DOMContentLoaded', () => {
