@@ -928,9 +928,24 @@ window.preparaConfirmacaoPagamento = function(novoStatus, descricao) {
     confirmModal.innerHTML = html;
     document.body.appendChild(confirmModal);
     
-    // Adicionar listeners aos botões
-    document.getElementById('btnConfirmarStatus').addEventListener('click', confirmarMudancaStatusPagamento);
-    document.getElementById('btnCancelarStatus').addEventListener('click', cancelarConfirmacao);
+    // Adicionar listeners aos botões (com timeout para garantir que estão no DOM)
+    setTimeout(() => {
+        const btnConfirmar = document.getElementById('btnConfirmarStatus');
+        const btnCancelar = document.getElementById('btnCancelarStatus');
+        
+        if (btnConfirmar) {
+            // Remover listeners antigos criando novo elemento (clone substitui o antigo)
+            const novoConfirmar = btnConfirmar.cloneNode(true);
+            btnConfirmar.parentNode.replaceChild(novoConfirmar, btnConfirmar);
+            novoConfirmar.addEventListener('click', confirmarMudancaStatusPagamento);
+        }
+        
+        if (btnCancelar) {
+            const novoCancelar = btnCancelar.cloneNode(true);
+            btnCancelar.parentNode.replaceChild(novoCancelar, btnCancelar);
+            novoCancelar.addEventListener('click', cancelarConfirmacao);
+        }
+    }, 0);
     
     console.log('%c✅ Modal de confirmação exibido', 'color: green; font-weight: bold;');
 };
