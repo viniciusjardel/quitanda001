@@ -320,8 +320,18 @@ window.openQuantityModal = id => {
   
   // Usar a unidade selecionada ou a padrão
   const unit = selectedProduct.selectedUnit || selectedProduct.unit;
+  
+  // Obter preço da unidade selecionada
+  let price = selectedProduct.price;
+  if (selectedProduct.prices && selectedProduct.prices[unit]) {
+    price = selectedProduct.prices[unit];
+    console.log(`💰 Usando preço específico para ${unit}: R$ ${price}`);
+  } else {
+    console.log(`💰 Usando preço padrão: R$ ${price}`);
+  }
+  
   document.getElementById('modalProductPrice').innerText =
-    `${formatPrice(selectedProduct.price)} / ${unit.toUpperCase()}`;
+    `${formatPrice(price)} / ${unit.toUpperCase()}`;
   document.getElementById('quantityDisplay').innerText = '0';
   document.getElementById('quantityInput').value = '';
 
@@ -505,6 +515,12 @@ window.addToCart = () => {
   // Usar a unidade selecionada ou a padrão
   const selectedUnit = selectedProduct.selectedUnit || selectedProduct.unit;
   
+  // Obter preço da unidade selecionada
+  let priceForUnit = selectedProduct.price;
+  if (selectedProduct.prices && selectedProduct.prices[selectedUnit]) {
+    priceForUnit = selectedProduct.prices[selectedUnit];
+  }
+  
   // Criar ID único para cada combinação de produto + unidade
   const cartItemId = `${selectedProduct.id}_${selectedUnit}`;
   
@@ -516,7 +532,8 @@ window.addToCart = () => {
     const cartItem = { 
       ...selectedProduct, 
       quantity: selectedQuantity,
-      selectedUnit: selectedUnit
+      selectedUnit: selectedUnit,
+      price: priceForUnit  // Guardar o preço específico da unidade
     };
     cart.push(cartItem);
   }

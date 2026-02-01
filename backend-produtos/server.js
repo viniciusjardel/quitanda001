@@ -30,6 +30,7 @@ async function initializeTables() {
         id TEXT PRIMARY KEY,
         name TEXT NOT NULL,
         price DECIMAL(10, 2) NOT NULL,
+        prices TEXT,
         image TEXT,
         category TEXT,
         unit TEXT NOT NULL,
@@ -61,35 +62,35 @@ async function initializeTables() {
     `);
     console.log('✅ Tabelas do banco de dados inicializadas');
     
-    // Migração: Adicionar coluna units se não existir
-    await addUnitsColumnIfNotExists();
+    // Migração: Adicionar coluna prices se não existir
+    await addPricesColumnIfNotExists();
   } catch (error) {
     console.error('❌ Erro ao criar tabelas:', error);
   }
 }
 
-// Adicionar coluna units se não existir
-async function addUnitsColumnIfNotExists() {
+// Adicionar coluna prices se não existir
+async function addPricesColumnIfNotExists() {
   try {
     // Verificar se a coluna existe
     const checkColumn = await pool.query(`
       SELECT column_name 
       FROM information_schema.columns 
-      WHERE table_name = 'produtos' AND column_name = 'units'
+      WHERE table_name = 'produtos' AND column_name = 'prices'
     `);
     
     if (checkColumn.rows.length === 0) {
       // Coluna não existe, adicionar
-      console.log('🔄 Adicionando coluna units à tabela produtos...');
+      console.log('🔄 Adicionando coluna prices à tabela produtos...');
       await pool.query(`
-        ALTER TABLE produtos ADD COLUMN units TEXT;
+        ALTER TABLE produtos ADD COLUMN prices TEXT;
       `);
-      console.log('✅ Coluna units adicionada com sucesso!');
+      console.log('✅ Coluna prices adicionada com sucesso!');
     } else {
-      console.log('✅ Coluna units já existe na tabela produtos');
+      console.log('✅ Coluna prices já existe na tabela produtos');
     }
   } catch (error) {
-    console.error('⚠️ Erro ao verificar/adicionar coluna units:', error.message);
+    console.error('⚠️ Erro ao verificar/adicionar coluna prices:', error.message);
   }
 }
 
@@ -115,6 +116,9 @@ app.get('/produtos', async (req, res) => {
     const result = await pool.query('SELECT * FROM produtos ORDER BY created_at DESC');
     const produtos = result.rows.map(p => {
       let units = null;
+      let prices = null;
+      
+      // Parsear units
       if (p.units) {
         try {
           units = JSON.parse(p.units);
@@ -123,10 +127,22 @@ app.get('/produtos', async (req, res) => {
           units = null;
         }
       }
+      
+      // Parsear prices
+      if (p.prices) {
+        try {
+          prices = JSON.parse(p.prices);
+        } catch (e) {
+          console.warn(`⚠️ Erro ao parsear prices do produto ${p.id}:`, e.message);
+          prices = null;
+        }
+      }
+      
       return {
         ...p,
         price: parseFloat(p.price),
-        units: units
+        units: units,
+        prices: prices
       };
     });
     console.log(`📦 GET /produtos: ${produtos.length} produtos`);
@@ -151,6 +167,9 @@ app.get('/produtos/:id', async (req, res) => {
     }
     
     let units = null;
+    let prices = null;
+    
+    // Parsear units
     if (produto.units) {
       try {
         units = JSON.parse(produto.units);
@@ -160,10 +179,21 @@ app.get('/produtos/:id', async (req, res) => {
       }
     }
     
+    // Parsear prices
+    if (produto.prices) {
+      try {
+        prices = JSON.parse(produto.prices);
+      } catch (e) {
+        console.warn(`⚠️ Erro ao parsear prices do produto ${id}:`, e.message);
+        prices = null;
+      }
+    }
+    
     res.json({
       ...produto,
       price: parseFloat(produto.price),
-      units: units
+      units: units,
+      prices: prices
     });
   } catch (error) {
     console.error('❌ Erro ao buscar produto:', error);
@@ -176,7 +206,7 @@ app.get('/produtos/:id', async (req, res) => {
 // =======================
 app.post('/produtos', async (req, res) => {
   try {
-    const { id, name, price, image, category, unit, units, color, description } = req.body;
+    const { id, name, price, prices, image, category, unit, units, color, description } = req.body;
 
     // Validar campos obrigatórios
     if (!id || !name || price === undefined || !unit) {
@@ -207,16 +237,32 @@ app.post('/produtos', async (req, res) => {
       }
     }
 
-    console.log('📝 Criando produto:', { id, name, price: priceNum, unit, units });
+    // Converter object prices para JSON string
+    let pricesJson = null;
+    if (prices) {
+      if (typeof prices === 'object') {
+        pricesJson = JSON.stringify(prices);
+      } else if (typeof prices === 'string') {
+        try {
+          JSON.parse(prices);
+          pricesJson = prices;
+        } catch (e) {
+          console.warn('⚠️ Prices inválido:', prices);
+        }
+      }
+    }
+
+    console.log('📝 Criando produto:', { id, name, price: priceNum, unit, units, prices });
 
     await pool.query(
-      `INSERT INTO produtos (id, name, price, image, category, unit, units, color, description)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)`,
-      [id, name, priceNum, image || null, category || null, unit, unitsJson, color || null, description || null]
+      `INSERT INTO produtos (id, name, price, prices, image, category, unit, units, color, description)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
+      [id, name, priceNum, pricesJson, image || null, category || null, unit, unitsJson, color || null, description || null]
     );
     
     console.log(`✅ Produto criado: ${name} (${id})`);
     console.log(`   Unidades: ${units ? (Array.isArray(units) ? units.join(', ') : units) : unit}`);
+    console.log(`   Preços: ${pricesJson || 'não especificados'}`);
     res.status(201).json({ 
       message: 'Produto criado com sucesso',
       id: id
@@ -237,12 +283,13 @@ app.post('/produtos', async (req, res) => {
 app.put('/produtos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, image, category, unit, units, color, description } = req.body;
+    const { name, price, prices, image, category, unit, units, color, description } = req.body;
 
     console.log('🔍 PUT /produtos/:id recebido:', {
       id,
       name,
       price: typeof price,
+      prices: typeof prices,
       unit,
       units,
       hasImage: !!image
@@ -270,6 +317,21 @@ app.put('/produtos/:id', async (req, res) => {
       }
     }
 
+    // Converter object prices para JSON string
+    let pricesJson = null;
+    if (prices) {
+      if (typeof prices === 'object') {
+        pricesJson = JSON.stringify(prices);
+      } else if (typeof prices === 'string') {
+        try {
+          JSON.parse(prices);
+          pricesJson = prices;
+        } catch (e) {
+          console.warn('⚠️ Prices inválido:', prices);
+        }
+      }
+    }
+
     // Validar preço
     const priceNum = parseFloat(price);
     if (isNaN(priceNum)) {
@@ -278,13 +340,14 @@ app.put('/produtos/:id', async (req, res) => {
 
     await pool.query(
       `UPDATE produtos 
-       SET name = $1, price = $2, image = $3, category = $4, unit = $5, units = $6, color = $7, description = $8, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $9`,
-      [name || null, priceNum, image || null, category || null, unit || null, unitsJson, color || null, description || null, id]
+       SET name = $1, price = $2, prices = $3, image = $4, category = $5, unit = $6, units = $7, color = $8, description = $9, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $10`,
+      [name || null, priceNum, pricesJson, image || null, category || null, unit || null, unitsJson, color || null, description || null, id]
     );
     
     console.log(`✅ Produto atualizado: ${id}`);
     console.log(`   Unidades: ${units ? (Array.isArray(units) ? units.join(', ') : units) : 'não especificadas'}`);
+    console.log(`   Preços: ${pricesJson || 'não especificados'}`);
     res.json({ 
       message: 'Produto atualizado com sucesso',
       id: id

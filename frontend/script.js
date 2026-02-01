@@ -148,6 +148,41 @@ function updateUnitsDisplay() {
             infoElement.style.fontWeight = 'bold';
         }
     }
+    
+    // Atualizar campos de preço para cada unidade
+    updateUnitPricesFields(selectedUnits);
+}
+
+function updateUnitPricesFields(selectedUnits) {
+    const container = document.getElementById('unitPricesContainer');
+    const fieldsContainer = document.getElementById('unitPricesFields');
+    
+    if (!container || !fieldsContainer) return;
+    
+    if (selectedUnits.length === 0) {
+        container.classList.add('hidden');
+        return;
+    }
+    
+    container.classList.remove('hidden');
+    
+    // Gerar campos de preço para cada unidade
+    fieldsContainer.innerHTML = selectedUnits.map(unit => `
+        <div class="flex items-center gap-3">
+            <label class="text-sm font-semibold text-gray-700 w-20">${unit.toUpperCase()}</label>
+            <div class="flex-1 flex items-center">
+                <span class="text-gray-600 font-semibold mr-2">R$</span>
+                <input type="number" 
+                       class="unit-price-input flex-1 px-3 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none" 
+                       data-unit="${unit}" 
+                       step="0.01" 
+                       min="0" 
+                       placeholder="0.00"
+                       value="">
+            </div>
+        </div>
+    `).join('');
+}
 }
 
 // Adicionar listeners aos checkboxes de unidades quando o modal abre
@@ -259,6 +294,24 @@ function editProduct(id) {
     
     updateUnitsDisplay();
     
+    // Carregar preços por unidade
+    if (product.prices && typeof product.prices === 'object') {
+        console.log('%c💰 Carregando preços por unidade:', 'color: green; font-weight: bold;', product.prices);
+        document.querySelectorAll('.unit-price-input').forEach(input => {
+            const unit = input.getAttribute('data-unit');
+            if (product.prices[unit]) {
+                input.value = product.prices[unit];
+                console.log(`  Preço ${unit}: ${product.prices[unit]}`);
+            }
+        });
+    } else if (product.price) {
+        // Se não houver preços por unidade, preencher com preço padrão
+        console.log('%c💰 Usando preço padrão para todas unidades:', 'color: orange;', product.price);
+        document.querySelectorAll('.unit-price-input').forEach(input => {
+            input.value = product.price;
+        });
+    }
+    
     // Carregar categoria
     document.getElementById('productCategory').value = product.category || '';
     
@@ -366,6 +419,25 @@ async function saveProduct(e) {
         alert('⚠️ Por favor, selecione pelo menos uma unidade de medida');
         return;
     }
+
+    // Capturar preços por unidade
+    const unitPrices = {};
+    document.querySelectorAll('.unit-price-input').forEach(input => {
+        const unit = input.getAttribute('data-unit');
+        const priceValue = parseFloat(input.value) || 0;
+        if (unit && priceValue > 0) {
+            unitPrices[unit] = parseFloat(priceValue.toFixed(2));
+        }
+    });
+    
+    console.log('%c💰 Preços por unidade:', 'color: green; font-weight: bold;', unitPrices);
+    
+    // Validar se todos as unidades têm preço
+    const unitsWithoutPrice = selectedUnits.filter(unit => !unitPrices[unit]);
+    if (unitsWithoutPrice.length > 0) {
+        alert(`⚠️ Por favor, defina o preço para: ${unitsWithoutPrice.join(', ')}`);
+        return;
+    }
     
     const productData = {
         id: editingProductId || 'prod_' + Date.now(),
@@ -373,6 +445,7 @@ async function saveProduct(e) {
         description: document.getElementById('productDescription').value,
         category: document.getElementById('productCategory').value || null,
         price: parseFloat(productPrice), // Garantir que é número
+        prices: unitPrices,              // Novos preços por unidade
         unit: selectedUnits[0], // Manter compatibilidade com sistemas antigos
         units: selectedUnits,   // Nova estrutura com múltiplas unidades
         image: finalImage,
