@@ -492,7 +492,13 @@ async function saveProduct(e) {
         const responseData = await response.json();
         console.log(`✅ Produto ${editingProductId ? 'atualizado' : 'criado'} com sucesso:`, responseData);
         
-        // Recarregar produtos
+        // Mostrar mensagem de sucesso IMEDIATAMENTE
+        showSuccessModal('✅ Produto Salvo!', `O produto "${productName}" foi salvo com sucesso!`);
+        
+        // Fechar o modal de edição
+        closeProductModal();
+        
+        // Recarregar produtos em background
         await loadData();
         
         console.log('%c🔍 VERIFICANDO DADOS APÓS RELOAD:', 'color: cyan; font-weight: bold;');
@@ -501,9 +507,6 @@ async function saveProduct(e) {
         if (reloadedProduct) {
             console.log('%c📋 Unidades no produto recarregado:', 'color: cyan;', reloadedProduct.units);
         }
-        
-        closeProductModal();
-        showSuccessModal('✅ Produto Salvo!', `O produto "${productName}" foi salvo com sucesso!`);
     } catch (error) {
         console.error('❌ Erro ao salvar:', error);
         console.error('📝 Dados que foram enviados:', productData);
@@ -860,9 +863,14 @@ window.salvarPedidoChanges = async function() {
             console.log('✅ Pedido atualizado no localStorage');
         }
 
+        // Mostrar sucesso IMEDIATAMENTE
         showSuccessModal('✅ Alterações Salvas!', 'As mudanças do pedido foram salvas com sucesso!');
-        closePedidoModal();
-        loadPedidos();
+        
+        // Recarregar em background e manter modal aberto para o admin confirmar
+        await loadPedidos();
+        
+        // Fechar apenas após confirmação visual do sucesso
+        // O admin fechará manualmente se desejar
     } catch (error) {
         console.error('❌ Erro ao salvar:', error);
         showSuccessModal('⚠️ Erro', 'Não foi possível salvar as alterações. Tente novamente.');
@@ -925,14 +933,17 @@ window.confirmarMudancaStatusPagamento = function() {
             'pago': 'Pagamento Confirmado'
         };
         
+        // Mostrar sucesso IMEDIATAMENTE
         showSuccessModal('✅ Status Atualizado!', `${statusMap[statusPagamentoEmAlterar] || 'Status'} registrado com sucesso!`);
         cancelarConfirmacao();
+        
+        // Recarregar em background
         loadPedidos();
-        abrirPedidoModal(currentPedidoId); // Reabrir modal para mostrar mudanças
     })
     .catch(error => {
         console.error('%c❌ Erro ao alterar status:', 'color: red;', error);
         showSuccessModal('⚠️ Erro', 'Não foi possível salvar no banco de dados. Tente novamente.');
+        cancelarConfirmacao();
     });
 };
 

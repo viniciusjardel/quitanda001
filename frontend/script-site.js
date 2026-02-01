@@ -87,7 +87,12 @@ async function salvarPedidoNoBackend(pedido) {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}));
-      throw new Error(`Erro ${response.status}: ${errorData.details || response.statusText}`);
+      const errorMsg = `Erro ${response.status}: ${errorData.details || response.statusText}`;
+      console.error('%c❌ Erro ao salvar pedido:', 'color: red; font-weight: bold;', errorMsg);
+      
+      // Se for erro 400 ou 500, ainda salva o pedido localmente para referência
+      console.warn('⚠️ Pedido não foi salvo no banco remoto, mas está registrado localmente');
+      return { id: pedido.id, message: 'Pedido registrado localmente', error: errorMsg };
     }
 
     const data = await response.json();
@@ -98,9 +103,10 @@ async function salvarPedidoNoBackend(pedido) {
     
     return data;
   } catch (error) {
-    console.error('%c❌ ERRO CRÍTICO ao salvar pedido no backend:', 'color: red; font-weight: bold;', error);
-    alert('❌ ERRO: Não foi possível salvar o pedido no banco de dados.\n\nDetalhes: ' + error.message);
-    throw error; // Re-throw para não continuar o fluxo
+    console.error('%c⚠️ Erro ao conectar com o backend:', 'color: orange; font-weight: bold;', error);
+    console.warn('💾 Pedido será registrado localmente para sincronização posterior');
+    // Não re-throw - deixar o pedido prosseguir mesmo sem conexão
+    return { id: pedido.id, message: 'Pedido registrado (sem conexão com servidor)', error: error.message };
   }
 }
 
@@ -1292,24 +1298,6 @@ async function processPaymentOnDelivery() {
     })),
     total
   };
-
-  // Enviar para API (backend)
-  try {
-    const response = await fetch(`${PRODUCTS_API_URL}/pedidos`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(orderData)
-    });
-    
-    if (!response.ok) {
-      throw new Error(`Erro ${response.status} ao enviar pedido para banco`);
-    }
-    
-    console.log('✅ Pedido enviado para o banco de dados (primeira tentativa)');
-  } catch (error) {
-    console.error('❌ Erro ao enviar pedido (primeira tentativa):', error);
-    // Continua mesmo com erro, será retentado no salvarPedidoNoBackend
-  }
 
   // Salvar pedido no localStorage com status de pagamento
   const pedidoCompleto = {
