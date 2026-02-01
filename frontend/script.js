@@ -864,8 +864,12 @@ window.salvarPedidoChanges = async function() {
         // Mostrar sucesso
         showSuccessModal('✅ Salvo!', 'As alterações foram salvas com sucesso');
         
-        // Recarregar pedidos
+        // Fechar modal automaticamente após 1s
         setTimeout(() => {
+            console.log('%c🔄 Fechando modal...', 'color: magenta;');
+            closePedidoModal();
+            
+            // Recarregar pedidos em background
             loadPedidos();
         }, 1000);
 
