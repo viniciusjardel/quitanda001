@@ -203,24 +203,42 @@ function renderProducts(list) {
   empty.classList.add('hidden');
 
   list.forEach(product => {
-  const card = document.createElement('div');
+    const card = document.createElement('div');
     card.className = 'product-card bg-white rounded-xl shadow-lg p-3 sm:p-4 flex flex-col';
 
     // Obter unidades (pode ser array ou string)
     const units = Array.isArray(product.units) ? product.units : [product.unit];
-    const unitsHTML = units.map(u => 
-      `<span style="display: inline-flex; align-items: center; background-color: #10b981; color: white; padding: 4px 10px; border-radius: 20px; font-size: 9px; sm_font-size: 11px; font-weight: 700; letter-spacing: 0.6px; white-space: nowrap; box-shadow: 0 2px 8px rgba(16, 185, 129, 0.25);">${u.toUpperCase()}</span>`
-    ).join('');
+    
+    // Construir seção de preços
+    let pricesHTML = '';
+    
+    if (units.length === 1) {
+      // Uma única unidade: mostrar preço simples
+      const price = product.prices?.[units[0]] || product.price;
+      pricesHTML = `<p class="text-lg sm:text-xl font-bold text-green-600">${formatPrice(price)} / ${units[0].toUpperCase()}</p>`;
+    } else {
+      // Múltiplas unidades: mostrar em cards lado a lado
+      pricesHTML = `
+        <div style="display: grid; grid-template-columns: repeat(${Math.min(units.length, 2)}, 1fr); gap: 8px; margin-bottom: 8px;">
+          ${units.map(unit => {
+            const price = product.prices?.[unit] || product.price;
+            return `
+              <div style="background: linear-gradient(135deg, #10b981 0%, #059669 100%); border-radius: 8px; padding: 8px 12px; text-align: center; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.2);">
+                <p style="color: white; font-size: 10px; font-weight: 600; opacity: 0.9; margin-bottom: 4px;">${unit.toUpperCase()}</p>
+                <p style="color: white; font-size: 14px; font-weight: 700;">${formatPrice(price)}</p>
+              </div>
+            `;
+          }).join('')}
+        </div>
+      `;
+    }
 
     card.innerHTML = `
       <img src="${product.image}" class="h-36 sm:h-48 w-full object-cover rounded-lg mb-2 sm:mb-3">
       <h3 class="text-lg sm:text-xl font-bold text-gray-800 line-clamp-2">${product.name}</h3>
       <p class="text-gray-500 text-xs sm:text-sm mb-2 sm:mb-3 line-clamp-2">${product.description || ''}</p>
-      <div style="display: flex; align-items: center; justify-content: space-between; gap: 8px; margin-bottom: 4px; flex-wrap: wrap;">
-        <p class="text-base sm:text-lg font-bold text-green-600">${formatPrice(product.price)} / ${product.unit.toUpperCase()}</p>
-        <div style="display: flex; gap: 4px; flex-wrap: wrap;">
-          ${unitsHTML}
-        </div>
+      <div style="margin-bottom: 8px;">
+        ${pricesHTML}
       </div>
       <button class="mt-auto py-2 sm:py-3 rounded-lg text-white font-bold text-sm sm:text-base"
         style="background:${product.color || '#7c3aed'}"
