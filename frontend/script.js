@@ -578,6 +578,19 @@ async function loadPedidos() {
             total: order.total || 0,
             status: order.status || 'pendente',
             notes: order.notes || '',
+            // Tentar preservar campos de troco se o backend os enviar
+            cash_received: (typeof order.cash_received !== 'undefined' && order.cash_received !== null) ? Number(order.cash_received) : null,
+            cash_change: (typeof order.cash_change !== 'undefined' && order.cash_change !== null) ? Number(order.cash_change) : null,
+            // Se backend não enviar, tentar extrair de notes (compatibilidade)
+            __raw_notes_parse: (function(){
+                try{
+                    if ((typeof order.cash_received === 'undefined' || order.cash_received === null) && order.notes){
+                        const m = String(order.notes).match(/Pago com\s*R?\$?\s*([0-9.,]+)/i);
+                        if (m) return { parsed_received: parseFloat(m[1].replace(/\./g,'').replace(/,/g,'.')) };
+                    }
+                }catch(e){ }
+                return null;
+            })(),
             created_at: order.created_at,
             updated_at: order.updated_at
         }));
