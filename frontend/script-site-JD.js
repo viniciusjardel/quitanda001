@@ -1,29 +1,6 @@
-/* =========================================================
-   HORTIFRUTI VILA NATAL - SCRIPT SITE (ESTÁVEL)
-   Fonte única de verdade: API SQLite (backend-produtos)
-   Backend PIX: pix-project.onrender.com (já funcional)
-   Backend Produtos: quitanda-produtos-api.onrender.com
-========================================================= */
-
-const BACKEND_URL = 'https://pix-project.onrender.com';
-const PRODUCTS_API_URL = 'https://quitanda-produtos-api.onrender.com';
-
-// =======================
-// ESTADO GLOBAL CONTROLADO
-// =======================
-let products = [];
-let cart = [];
-let selectedProduct = null;
-let selectedQuantity = 0;
-let deliveryType = null;
-let paymentMethod = null;
-let pixInterval = null;
-let pendingWhatsAppUrl = null; // URL para enviar ao WhatsApp (opcional)
-
-// =======================
-// UTIL
-// =======================
-const formatPrice = v => `R$ ${v.toFixed(2).replace('.', ',')}`;
+// Arquivo `script-site-JD.js` removido: variantes não são permitidas.
+// As alterações deste arquivo foram mescladas em `script-site.js`.
+// Este arquivo agora está vazio intencionalmente para evitar versões alternativas.
 
 // Parseia strings de moeda aceitando vírgula ou ponto, retornando Number com casas decimais
 function parseCurrencyString(str) {
@@ -1348,12 +1325,12 @@ async function processPaymentOnDelivery() {
   let cashChange = null;
   if (paymentMethod === 'money') {
     const input = document.getElementById('cashReceivedInput');
-        if (input) {
+    if (input) {
       // Se usuário não preencheu, assumir pagamento exato pelo total
       const raw = (input.value && String(input.value).trim() !== '') ? input.value : total.toFixed(2);
       cashReceived = parseCurrencyString(raw);
       cashChange = Number((cashReceived - total).toFixed(2));
-        }
+    }
   }
 
   const orderData = {
@@ -1365,10 +1342,10 @@ async function processPaymentOnDelivery() {
     apto: deliveryInfo.apto,
     delivery_type: deliveryType,
     payment_method: deliveryInfo.paymentMethod,
-    cash_received: cashReceived,
-    cash_change: cashChange,
     payment_status: 'pendente',
     payment_id: null,
+    cash_received: cashReceived,
+    cash_change: cashChange,
     items: cart.map(i => ({
       id: i.id,
       name: i.name,
@@ -1401,18 +1378,13 @@ async function processPaymentOnDelivery() {
       price: i.price,
       unit: i.selectedUnit || i.unit
     })),
-    cash_received: cashReceived,
-    cash_change: cashChange,
     total
   };
 
   // Incluir nota resumida com informações de pagamento (compatibilidade caso backend não persista campos extra)
   try {
     if (paymentMethod === 'money') {
-<<<<<<< HEAD
       // Mensagens específicas pedidas: "não precisará de troco" ou "Valor do troco: XX,XX"
-  try {
-    if (paymentMethod === 'money') {
       const received = (typeof cashReceived === 'number') ? cashReceived : null;
       const change = (typeof cashChange === 'number') ? cashChange : null;
 
@@ -1421,12 +1393,9 @@ async function processPaymentOnDelivery() {
       } else if (received !== null && change > 0) {
         pedidoCompleto.notes = `Valor do troco: ${change.toFixed(2).replace('.', ',')}`;
       } else {
+        // fallback: deixar nota vazia para não poluir a nota do pedido
         pedidoCompleto.notes = pedidoCompleto.notes || '';
       }
-    } else {
-      pedidoCompleto.notes = pedidoCompleto.notes || '';
-    }
-  } catch (e) { console.warn('Erro ao adicionar notas de troco ao pedido', e); }
     } else {
       pedidoCompleto.notes = pedidoCompleto.notes || '';
     }

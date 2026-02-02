@@ -53,9 +53,11 @@ async function initializeTables() {
         payment_status TEXT DEFAULT 'pendente',
         payment_id TEXT,
         items TEXT NOT NULL,
+        notes TEXT,
+        cash_received DECIMAL(10,2),
+        cash_change DECIMAL(10,2),
         total DECIMAL(10, 2) NOT NULL,
         status TEXT DEFAULT 'pendente',
-        notes TEXT,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -64,8 +66,41 @@ async function initializeTables() {
     
     // Migração: Adicionar coluna prices se não existir
     await addPricesColumnIfNotExists();
+    // Migração: Adicionar colunas de troco/cash se não existirem
+    await addCashColumnsIfNotExists();
   } catch (error) {
     console.error('❌ Erro ao criar tabelas:', error);
+  }
+}
+
+// Adicionar colunas cash_received e cash_change na tabela pedidos se não existirem
+async function addCashColumnsIfNotExists() {
+  try {
+    const checkColumns = await pool.query(`
+      SELECT column_name
+      FROM information_schema.columns
+      WHERE table_name = 'pedidos' AND column_name IN ('cash_received', 'cash_change')
+    `);
+
+    const existing = checkColumns.rows.map(r => r.column_name);
+
+    if (!existing.includes('cash_received')) {
+      console.log('🔄 Adicionando coluna cash_received à tabela pedidos...');
+      await pool.query(`ALTER TABLE pedidos ADD COLUMN cash_received DECIMAL(10,2);`);
+      console.log('✅ Coluna cash_received adicionada com sucesso!');
+    } else {
+      console.log('✅ Coluna cash_received já existe na tabela pedidos');
+    }
+
+    if (!existing.includes('cash_change')) {
+      console.log('🔄 Adicionando coluna cash_change à tabela pedidos...');
+      await pool.query(`ALTER TABLE pedidos ADD COLUMN cash_change DECIMAL(10,2);`);
+      console.log('✅ Coluna cash_change adicionada com sucesso!');
+    } else {
+      console.log('✅ Coluna cash_change já existe na tabela pedidos');
+    }
+  } catch (error) {
+    console.error('⚠️ Erro ao verificar/adicionar colunas de troco:', error.message);
   }
 }
 
@@ -433,7 +468,7 @@ app.get('/pedidos/:id', async (req, res) => {
 // POST novo pedido
 app.post('/pedidos', async (req, res) => {
   try {
-    const { id, customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, payment_status, payment_id, items, total } = req.body;
+    const { id, customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, payment_status, payment_id, items, total, notes, cash_received, cash_change } = req.body;
     
     console.log('📨 Body recebido:', { id, customer_name, customer_phone, address, delivery_type, payment_method, items: items?.length, total });
     
@@ -448,9 +483,9 @@ app.post('/pedidos', async (req, res) => {
     console.log('📝 Recebendo pedido com ID:', id);
     
     await pool.query(
-      `INSERT INTO pedidos (id, customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, payment_status, payment_id, items, total, status)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)`,
-      [id, customer_name, customer_phone, finalAddress, bloco || '', apto || '', delivery_type, payment_method, payment_status || 'pendente', payment_id || null, JSON.stringify(items), total, 'pendente']
+      `INSERT INTO pedidos (id, customer_name, customer_phone, address, bloco, apto, delivery_type, payment_method, payment_status, payment_id, items, notes, cash_received, cash_change, total, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16)`,
+      [id, customer_name, customer_phone, finalAddress, bloco || '', apto || '', delivery_type, payment_method, payment_status || 'pendente', payment_id || null, JSON.stringify(items), notes || null, cash_received !== undefined ? cash_received : null, cash_change !== undefined ? cash_change : null, total, 'pendente']
     );
     
     console.log('✅ Pedido criado com ID:', id);
