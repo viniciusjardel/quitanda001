@@ -1409,10 +1409,6 @@ async function processPaymentOnDelivery() {
   // Incluir nota resumida com informações de pagamento (compatibilidade caso backend não persista campos extra)
   try {
     if (paymentMethod === 'money') {
-<<<<<<< HEAD
-      // Mensagens específicas pedidas: "não precisará de troco" ou "Valor do troco: XX,XX"
-  try {
-    if (paymentMethod === 'money') {
       const received = (typeof cashReceived === 'number') ? cashReceived : null;
       const change = (typeof cashChange === 'number') ? cashChange : null;
 
@@ -1423,10 +1419,6 @@ async function processPaymentOnDelivery() {
       } else {
         pedidoCompleto.notes = pedidoCompleto.notes || '';
       }
-    } else {
-      pedidoCompleto.notes = pedidoCompleto.notes || '';
-    }
-  } catch (e) { console.warn('Erro ao adicionar notas de troco ao pedido', e); }
     } else {
       pedidoCompleto.notes = pedidoCompleto.notes || '';
     }
