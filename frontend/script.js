@@ -821,13 +821,32 @@ window.abrirPedidoModal = function(id) {
             let cr = pedido.cash_received !== undefined && pedido.cash_received !== null ? Number(pedido.cash_received) : null;
             let cc = pedido.cash_change !== undefined && pedido.cash_change !== null ? Number(pedido.cash_change) : null;
 
-            // Se não existir, tentar extrair dos notes (formato: "Pagamento em Dinheiro: Pago com R$ X • Troco: R$ Y")
-            if (cr === null && pedido.notes) {
+            // Se não existir, tentar extrair dos notes (formatos aceitos:
+            // 1) "Pagamento em Dinheiro: Não precisará de troco"
+            // 2) "Pagamento em Dinheiro: Valor do troco: R$ X,XX"
+            // 3) antigo: "Pagamento em Dinheiro: Pago com R$ X • Troco: R$ Y"
+            if ((cr === null || cc === null) && pedido.notes) {
                 try {
-                    const m = String(pedido.notes).match(/Pago com\s*R?\$?\s*([0-9.,]+)/i);
-                    const n = String(pedido.notes).match(/Troco:\s*R?\$?\s*([0-9.,]+)/i);
-                    if (m) cr = parseFloat(m[1].replace(/\./g,'').replace(/,/g,'.'));
-                    if (n) cc = parseFloat(n[1].replace(/\./g,'').replace(/,/g,'.'));
+                    const note = String(pedido.notes);
+                    // Caso 1
+                    if (/não\s+precisará\s+de\s+troco/i.test(note)) {
+                        // marcar recebido igual ao total e troco zero quando possível
+                        cr = cr === null ? Number(pedido.total || 0) : cr;
+                        cc = 0;
+                    }
+
+                    // Caso 2: Valor do troco: R$ X
+                    const mValTroco = note.match(/Valor do troco:\s*R?\$?\s*([0-9.,]+)/i);
+                    if (mValTroco) {
+                        cc = parseFloat(mValTroco[1].replace(/\./g,'').replace(/,/g,'.'));
+                        cr = cr === null ? Number(pedido.total || 0) + cc : cr;
+                    }
+
+                    // Caso 3: formato antigo
+                    const m = note.match(/Pago com\s*R?\$?\s*([0-9.,]+)/i);
+                    const n = note.match(/Troco:\s*R?\$?\s*([0-9.,]+)/i);
+                    if (m && cr === null) cr = parseFloat(m[1].replace(/\./g,'').replace(/,/g,'.'));
+                    if (n && cc === null) cc = parseFloat(n[1].replace(/\./g,'').replace(/,/g,'.'));
                 } catch(e) { /* ignorar parsing */ }
             }
 

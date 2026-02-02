@@ -1407,9 +1407,20 @@ async function processPaymentOnDelivery() {
   // Incluir nota resumida com informações de pagamento (compatibilidade caso backend não persista campos extra)
   try {
     if (paymentMethod === 'money') {
-      const receivedStr = cashReceived !== null ? `R$ ${cashReceived.toFixed(2).replace('.', ',')}` : '-';
-      const changeStr = cashChange !== null ? `R$ ${cashChange.toFixed(2).replace('.', ',')}` : '-';
-      pedidoCompleto.notes = `Pagamento em Dinheiro: Pago com ${receivedStr} • Troco: ${changeStr}`;
+      // Mensagens específicas pedidas: "não precisará de troco" ou "Valor do troco: XX,XX"
+      const received = (typeof cashReceived === 'number') ? cashReceived : null;
+      const change = (typeof cashChange === 'number') ? cashChange : null;
+
+      if (received !== null && change === 0) {
+        pedidoCompleto.notes = `Pagamento em Dinheiro: Não precisará de troco`;
+      } else if (received !== null && change > 0) {
+        pedidoCompleto.notes = `Pagamento em Dinheiro: Valor do troco: R$ ${change.toFixed(2).replace('.', ',')}`;
+      } else {
+        // fallback genérico
+        const receivedStr = received !== null ? `R$ ${received.toFixed(2).replace('.', ',')}` : '-';
+        const changeStr = change !== null ? `R$ ${change.toFixed(2).replace('.', ',')}` : '-';
+        pedidoCompleto.notes = `Pagamento em Dinheiro: Pago com ${receivedStr} • Troco: ${changeStr}`;
+      }
     } else {
       pedidoCompleto.notes = pedidoCompleto.notes || '';
     }
