@@ -896,6 +896,30 @@ window.abrirPedidoModal = function(id) {
     } else {
         areaBotoes.classList.add('hidden');
     }
+
+    // ===== PREENCHER BOTÕES DE STATUS DO PEDIDO (fluxo) =====
+    try{
+        const areaOrder = document.getElementById('areaOrderStatus');
+        const containerOrder = document.getElementById('botoesOrderStatus');
+        if (areaOrder && containerOrder) {
+            areaOrder.classList.remove('hidden');
+
+            // Status possíveis (texto exibido será armazenado como `status` no pedido)
+            const statuses = [
+                { key: 'Quitanda Está Recebendo O Seu Pedido', label: 'Quitanda Está Recebendo O Seu Pedido' },
+                { key: 'Em preparação', label: 'Em preparação' },
+                { key: 'pedido a caminho', label: 'Pedido a caminho' }
+            ];
+
+            const currentStatus = (pedido.status || '').toString().trim();
+
+            containerOrder.innerHTML = statuses.map(s => {
+                const active = s.key === currentStatus;
+                const cls = active ? 'bg-green-600 text-white border-2 border-green-700' : 'bg-gray-100 text-gray-800 hover:bg-gray-200';
+                return `<button class="w-full p-3 rounded-lg font-bold transition ${cls}" onclick="aplicarStatusPedidoInstantaneo('${s.key.replace(/'/g, "\\'")}', '${s.label.replace(/'/g, "\\'")}')">${s.label}</button>`;
+            }).join('');
+        }
+    }catch(e){ console.warn('Erro ao renderizar botoes de status do pedido', e); }
     
     // ===== PREENCHER OUTROS CAMPOS =====
     document.getElementById('pedidoNotes').value = pedido.notes || '';
@@ -1403,6 +1427,43 @@ window.aplicarStatusPagamentoInstantaneo = async function(novoStatus, descricao)
         console.error('Erro em aplicarStatusPagamentoInstantaneo', e);
         showSuccessModal('❌ Erro', 'Não foi possível alterar o status.');
     }
+};
+
+// Aplicar alteração de status do pedido (fluxo) instantaneamente: atualizar servidor, mostrar confirmação e fechar modal após OK
+window.aplicarStatusPedidoInstantaneo = async function(novoStatus, descricao){
+    try{
+        if (!currentPedidoId) { console.error('Nenhum pedido aberto para alterar status do pedido'); return; }
+
+        const pedidoId = currentPedidoId;
+        console.log('%c🔄 Aplicando STATUS DO PEDIDO instantâneo:', 'color: blue; font-weight: bold;', novoStatus, 'ID:', pedidoId);
+
+        // Enviar atualização ao servidor (campo `status`)
+        const res = await fetch(`${API_URL}/pedidos/${pedidoId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ status: novoStatus })
+        });
+
+        if (!res.ok) {
+            const errText = await res.text().catch(()=>null);
+            console.error('Erro ao atualizar status do pedido no servidor', res.status, errText);
+            showSuccessModal('❌ Erro', 'Não foi possível alterar o status do pedido.');
+            return;
+        }
+
+        // Atualizar em memória
+        const pedido = allPedidos.find(p => String(p.id) === String(pedidoId));
+        if (pedido) {
+            pedido.status = novoStatus;
+        }
+
+        // Exibir mensagem de sucesso e marcar fechamento pós-OK
+        showSuccessModal('✅ Status do Pedido alterado!', `Status atualizado para: ${descricao || novoStatus}`);
+        window.__afterSuccessClosePedido = true;
+
+        // Reabrir modal para atualizar visual
+        try{ abrirPedidoModal(pedidoId); }catch(e){ console.warn(e); }
+    }catch(e){ console.error('Erro ao aplicar status do pedido', e); showSuccessModal('❌ Erro', 'Falha ao aplicar status do pedido.'); }
 };
 
 // Variáveis globais para confirmação

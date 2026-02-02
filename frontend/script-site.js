@@ -189,6 +189,107 @@ const loadCart = () => {
 };
 
 // =======================
+// GERENCIAMENTO LOCAL DE PEDIDOS (para o cliente acompanhar)
+// =======================
+function getLocalOrders() {
+  try { return JSON.parse(localStorage.getItem('hortifruti_my_orders')) || []; } catch(e){ return []; }
+}
+
+function saveLocalOrderRecord(id, meta = {}){
+  try{
+    const list = getLocalOrders();
+    const exists = list.find(o => String(o.id) === String(id));
+    const record = {
+      id: id,
+      timestamp: (new Date()).toLocaleString('pt-BR'),
+      total: typeof meta.total !== 'undefined' ? meta.total : (meta.total ? meta.total : null),
+      payment_method: meta.payment_method || meta.paymentMethod || null,
+      status: meta.status || meta.order_status || null
+    };
+    if (!exists) list.unshift(record);
+    localStorage.setItem('hortifruti_my_orders', JSON.stringify(list.slice(0,10)));
+  }catch(e){ console.warn('Erro ao salvar pedido localmente', e); }
+}
+
+async function fetchOrderFromBackend(id){
+  try{
+    const res = await fetch(`${PRODUCTS_API_URL}/pedidos/${id}`);
+    if (!res.ok) return null;
+    return await res.json();
+  }catch(e){ return null; }
+}
+
+function openMyOrdersModal(){
+  let modal = document.getElementById('myOrdersModal');
+  if (modal) { modal.style.display = 'flex'; renderMyOrders(); return; }
+
+  modal = document.createElement('div');
+  modal.id = 'myOrdersModal';
+  modal.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:99999;';
+  modal.innerHTML = `
+    <div style="width:90%;max-width:720px;background:white;border-radius:12px;padding:18px;box-shadow:0 12px 48px rgba(0,0,0,0.25);">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+        <h3 style="margin:0;font-size:18px;font-weight:700">Meus Pedidos</h3>
+        <button id="closeMyOrders" style="background:transparent;border:none;font-size:18px;">✕</button>
+      </div>
+      <div id="myOrdersList" style="max-height:60vh;overflow:auto;"></div>
+      <div style="text-align:right;margin-top:12px;"><button id="refreshMyOrders" style="padding:8px 14px;border-radius:8px;background:#10b981;color:white;font-weight:700;border:none;">Atualizar</button></div>
+    </div>
+  `;
+  document.body.appendChild(modal);
+
+  document.getElementById('closeMyOrders').addEventListener('click', ()=> { modal.style.display = 'none'; });
+  document.getElementById('refreshMyOrders').addEventListener('click', renderMyOrders);
+
+  renderMyOrders();
+}
+
+async function renderMyOrders(){
+  const listEl = document.getElementById('myOrdersList');
+  if (!listEl) return;
+  listEl.innerHTML = '<p style="color:#666">Carregando...</p>';
+
+  const orders = getLocalOrders();
+  if (!orders.length){ listEl.innerHTML = '<p style="color:#666">Nenhum pedido recente encontrado.</p>'; return; }
+
+  listEl.innerHTML = '';
+  for (const o of orders){
+    const container = document.createElement('div');
+    container.style.cssText = 'border:1px solid #eee;border-radius:8px;padding:10px;margin-bottom:8px;';
+    container.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><div><strong>Pedido #${o.id}</strong><div style="font-size:12px;color:#666">${o.timestamp}</div></div><div id="status-${o.id}" style="font-weight:700;color:#999">Carregando...</div></div><div id="items-${o.id}"> </div><div style="margin-top:8px;font-size:14px;font-weight:700">Total: ${o.total ? formatPrice(o.total) : '-'}</div>`;
+    listEl.appendChild(container);
+
+    // buscar no backend a versão mais atual do pedido
+    (async function(id){
+      const data = await fetchOrderFromBackend(id);
+      const statusEl = document.getElementById(`status-${id}`);
+      const itemsEl = document.getElementById(`items-${id}`);
+      if (!data){ if(statusEl) statusEl.textContent = (o.status || 'Desconhecido'); return; }
+      // Priorizar o status do pedido (fluxo), não o status de pagamento
+      if(statusEl) statusEl.textContent = (data.status || o.status || 'Quitanda Está Recebendo O Seu Pedido');
+      if(itemsEl){
+        const itens = typeof data.items === 'string' ? JSON.parse(data.items) : (data.items || []);
+        itemsEl.innerHTML = itens.map(it=>`<div style="font-size:13px;color:#333;padding:4px 0;border-top:1px dashed #f1f1f1">${it.name} • ${it.quantity}x • R$ ${Number(it.price).toFixed(2).replace('.',',')}</div>`).join('');
+      }
+    })(o.id);
+  }
+}
+
+// Criar botão fixo "Meus Pedidos" para acesso rápido
+document.addEventListener('DOMContentLoaded', ()=>{
+  try{
+    if (!document.getElementById('myOrdersBtn')){
+      const btn = document.createElement('button');
+      btn.id = 'myOrdersBtn';
+      btn.textContent = 'Meus Pedidos';
+      btn.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:99998;padding:10px 14px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,0.12);';
+      btn.addEventListener('click', openMyOrdersModal);
+      document.body.appendChild(btn);
+    }
+  }catch(e){ }
+});
+
+// =======================
 // PRODUTOS
 // =======================
 async function fetchProductsFromAPI() {
@@ -769,7 +870,22 @@ function updateCartUI() {
 
   badge.innerText = count;
   badge.classList.toggle('hidden', count === 0);
-  totalEl.innerText = formatPrice(total);
+  // Incluir taxa de entrega quando aplicável (somente se houver itens no carrinho)
+  const deliveryFee = (deliveryType === 'delivery' && count > 0) ? 3 : 0;
+  const totalWithDelivery = Number((total + deliveryFee).toFixed(2));
+  totalEl.innerText = formatPrice(totalWithDelivery);
+
+  // Se existir elemento informativo sobre taxa, atualiza (opcional)
+  const feeInfoEl = document.getElementById('cartDeliveryInfo');
+  if (feeInfoEl) {
+    if (deliveryFee > 0) {
+      feeInfoEl.classList.remove('hidden');
+      feeInfoEl.innerText = `Taxa de entrega: ${formatPrice(deliveryFee)}`;
+    } else {
+      feeInfoEl.classList.add('hidden');
+      feeInfoEl.innerText = '';
+    }
+  }
 }
 
 window.increaseQuantity = (index) => {
@@ -1132,14 +1248,12 @@ function iniciarPollingPix(id) {
         total
       };
       
-      // Salvar no backend (e fallback em localStorage)
-      await salvarPedidoNoBackend(pedidoCompleto);
+      // Salvar no backend (e fallback em localStorage) e registrar localmente para o cliente
+      const savedRes = await salvarPedidoNoBackend(pedidoCompleto);
+      const savedOrderId = (savedRes && (savedRes.id || savedRes.insertId)) ? (savedRes.id || savedRes.insertId) : pedidoCompleto.id;
+      saveLocalOrderRecord(savedOrderId, pedidoCompleto);
       
-      localStorage.removeItem('hortifruti_cart');
-      localStorage.removeItem('paymentId');
-      localStorage.removeItem('pixData');
-      cart = [];
-      updateCartUI();
+      // carrinho será limpo após preparar a mensagem de confirmação (mantido para leitura do `cart` abaixo)
       
       // Preparar mensagem para WhatsApp (opcional)
       const customerName = document.getElementById('deliveryName').value;
@@ -1166,10 +1280,17 @@ ${deliveryType === 'delivery' ? '🚗 *Entrega: Sim (+R$ 3,00)*' : '🏪 *Retira
 
       const encodedMessage = encodeURIComponent(message);
       pendingWhatsAppUrl = `https://wa.me/5581971028677?text=${encodedMessage}`;
+
+      // Agora que a mensagem foi preparada, limpar o carrinho e persistir estado vazio
+      try { localStorage.removeItem('paymentId'); } catch (e) {}
+      try { localStorage.removeItem('pixData'); } catch (e) {}
+      cart = [];
+      saveCart();
+      updateCartUI();
       
       setTimeout(() => {
         closePixModal();
-        window.openSuccessOrderModal(pedidoCompleto.id, '✅ Seu pedido foi realizado com sucesso!\n\n💰 Pagamento confirmado via PIX!');
+        window.openSuccessOrderModal(savedOrderId, '✅ Seu pedido foi realizado com sucesso!\n\n💰 Pagamento confirmado via PIX!');
       }, 3000);
     }
   }, 2000);
@@ -1368,6 +1489,8 @@ async function processPaymentOnDelivery() {
     cash_received: cashReceived,
     cash_change: cashChange,
     payment_status: 'pendente',
+    // status do fluxo do pedido (visível ao cliente e ao admin)
+    status: 'Quitanda Está Recebendo O Seu Pedido',
     payment_id: null,
     items: cart.map(i => ({
       id: i.id,
@@ -1391,6 +1514,7 @@ async function processPaymentOnDelivery() {
     delivery_type: deliveryType,
     payment_method: deliveryInfo.paymentMethod,
     payment_status: 'pendente',
+    status: 'Quitanda Está Recebendo O Seu Pedido',
     payment_id: null,
     cash_received: cashReceived,
     cash_change: cashChange,
@@ -1424,8 +1548,10 @@ async function processPaymentOnDelivery() {
     }
   } catch (e) { console.warn('Erro ao adicionar notas de troco ao pedido', e); }
   
-  // Salvar no backend (e fallback em localStorage)
-  await salvarPedidoNoBackend(pedidoCompleto);
+  // Salvar no backend (e fallback em localStorage) e registrar localmente para o cliente
+  const savedRes = await salvarPedidoNoBackend(pedidoCompleto);
+  const savedOrderId = (savedRes && (savedRes.id || savedRes.insertId)) ? (savedRes.id || savedRes.insertId) : pedidoCompleto.id;
+  try{ saveLocalOrderRecord(savedOrderId, pedidoCompleto); }catch(e){}
 
   // Enviar para WhatsApp
   const message = `
@@ -1452,7 +1578,7 @@ ${deliveryType === 'delivery' ? '🚗 *Entrega: Sim (+R$ 3,00)*' : '🏪 *Retira
 
   // Limpar carrinho
   cart = [];
-  localStorage.removeItem('hortifruti_cart');
+  saveCart();
   updateCartUI();
 
   // Fechar modals e mostrar sucesso
@@ -1462,7 +1588,7 @@ ${deliveryType === 'delivery' ? '🚗 *Entrega: Sim (+R$ 3,00)*' : '🏪 *Retira
   setTimeout(() => {
     const paymentInfo = paymentMethod === 'money' ? `\n\nPago com: R$ ${cashReceived ? cashReceived.toFixed(2).replace('.', ',') : '-'} • Troco: R$ ${cashChange !== null ? cashChange.toFixed(2).replace('.', ',') : '-'}` : '';
     const successMsg = `✅ Seu pedido foi confirmado!\n\n💳 Forma de Pagamento: ${deliveryInfo.paymentMethod}${paymentInfo}\n\nDeseja enviar para o WhatsApp da loja?`;
-    window.openSuccessOrderModal(pedidoCompleto.id, successMsg);
+    window.openSuccessOrderModal(savedOrderId, successMsg);
   }, 500);
 }
 

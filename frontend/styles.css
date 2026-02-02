@@ -152,3 +152,12 @@ n/* Ocultar círculos SVG vermelhos dentro do overlay/pedido */
     display: none !important;
 }
 /* fim do fix (emergência) */
+
+/* ======== Fix: garantir que o título do Carrinho apareça em telas pequenas ======== */
+/* Forçar quebra/visibilidade do texto dentro do header do modal do carrinho */
+#cartModal .gradient-bg h3 {
+    white-space: normal !important;
+    overflow: visible !important;
+    overflow-wrap: anywhere !important;
+    word-break: break-word !important;
+}
