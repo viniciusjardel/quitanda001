@@ -168,17 +168,17 @@ function renderProductsFiltered(term = '') {
 
     empty.classList.add('hidden');
     list.innerHTML = filtered.map(p => `
-        <div class="flex items-center gap-4 bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition">
-            <img src="${p.image}" alt="${p.name}" class="w-24 h-24 object-cover rounded-lg">
-            <div class="flex-1">
+        <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition">
+            <img src="${p.image}" alt="${p.name}" class="w-full sm:w-24 h-48 sm:h-24 object-cover rounded-lg flex-shrink-0">
+            <div class="flex-1 min-w-0">
                 <h4 class="text-lg font-bold text-gray-800">${p.name}</h4>
                 ${p.description ? `<p class="text-sm text-gray-500">${p.description}</p>` : ''}
-                <div class="flex items-center gap-4 mt-2">
+                <div class="flex items-center gap-4 mt-2 flex-wrap">
                     <span class="text-xl font-bold text-green-600">R$ ${p.price.toFixed(2)}</span>
                     <span class="text-sm text-gray-600">${p.unit}</span>
                 </div>
             </div>
-            <div class="flex gap-2">
+            <div class="flex gap-2 mt-3 sm:mt-0 sm:flex-col flex-shrink-0">
                 <button onclick="editProduct('${p.id}')" class="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition">
                     ✏️ Editar
                 </button>
@@ -726,26 +726,30 @@ function renderPedidos(pedidos) {
         const statusBgClass = statusCategory === 'pago' ? 'bg-green-50' : (statusCategory === 'pendente' ? 'bg-yellow-50' : (statusCategory === 'cancelado' ? 'bg-red-50' : ''));
         
         return `
-        <div class="pedido-item border-2 border-gray-200 rounded-lg p-4 hover:border-purple-400 transition cursor-pointer ${statusBgClass}" data-pedido-id="${p.id}">
-            <div class="flex justify-between items-start mb-3">
-                <div>
-                    <h3 class="text-lg font-bold text-gray-800">Nota #${p.id}
-                        ${statusCategory === 'cancelado' ? '<span class="ml-2 text-sm font-bold text-red-600">❌ Pedido Cancelado</span>' : (statusCategory === 'pendente' ? '<span class="ml-2 text-sm font-bold text-yellow-600">🟡 Pagamento Pendente</span>' : (statusCategory === 'pago' ? '<span class="ml-2 text-sm font-bold text-green-600">✅ Pago</span>' : ''))}
-                    </h3>
-                    <p class="text-sm text-gray-700 font-semibold">${p.customer_name}</p>
-                    <p class="text-sm text-gray-500">📱 ${p.customer_phone}</p>
+        <div class="pedido-item w-full border-2 border-gray-200 rounded-lg p-4 hover:border-purple-400 transition cursor-pointer ${statusBgClass}" data-pedido-id="${p.id}">
+            <div class="flex flex-col sm:flex-row justify-between items-start gap-3 mb-3">
+                <div class="min-w-0">
+                    <h3 class="text-lg font-bold text-gray-800 truncate">Nota #${p.id}</h3>
+                    <p class="text-sm text-gray-700 font-semibold truncate">${p.customer_name}</p>
+                    <p class="text-sm text-gray-500 truncate">📱 ${p.customer_phone}</p>
+                    <div class="mt-2">
+                        <span class="inline-block text-sm font-bold py-1 px-3 rounded-full ${statusCategory === 'pago' ? 'bg-green-100 text-green-800' : (statusCategory === 'pendente' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800')}">${paymentBadge}</span>
+                    </div>
                 </div>
-                
+                <div class="flex-shrink-0 text-right sm:text-right">
+                    <p class="text-sm text-gray-600">${p.payment_method} • ${p.delivery_type === 'delivery' ? '🚗 Entrega' : '🏪 Retirada'}</p>
+                </div>
             </div>
-            
-            <p class="text-sm text-gray-600 mb-2">📍 ${p.address}${p.bloco ? `, Bloco ${p.bloco}` : ''}${p.apto ? `, Apt ${p.apto}` : ''}</p>
-            <p class="text-sm text-gray-600 mb-2">💳 ${p.payment_method} • ${p.delivery_type === 'delivery' ? '🚗 Entrega' : '🏪 Retirada'}</p>
-            
-            <div class="flex justify-between items-end">
+
+            <p class="text-sm text-gray-600 mb-2 truncate">📍 ${p.address}${p.bloco ? `, Bloco ${p.bloco}` : ''}${p.apto ? `, Apt ${p.apto}` : ''}</p>
+
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-2">
                 <div>
                     <span class="text-xs text-gray-500">${new Date(p.created_at).toLocaleDateString('pt-BR')} ${new Date(p.created_at).toLocaleTimeString('pt-BR', {hour: '2-digit', minute:'2-digit'})}</span>
                 </div>
-                <span class="text-xl font-bold text-green-600">R$ ${parseFloat(p.total).toFixed(2).replace('.', ',')}</span>
+                <div class="flex-shrink-0">
+                    <span class="text-xl font-bold text-green-600">R$ ${parseFloat(p.total).toFixed(2).replace('.', ',')}</span>
+                </div>
             </div>
         </div>
     `}).join('');
@@ -771,11 +775,10 @@ function renderPedidos(pedidos) {
             else if (/cancel|cance|cancelled|canceled/.test(norm)) cat = 'cancelado';
             else if (/pago|paid/.test(norm)) cat = 'pago';
 
-            const labelHtml = cat === 'cancelado' ? '<span class="ml-2 text-sm font-bold text-red-600">❌ Pedido Cancelado</span>' : (cat === 'pendente' ? '<span class="ml-2 text-sm font-bold text-yellow-600">🟡 Pagamento Pendente</span>' : (cat === 'pago' ? '<span class="ml-2 text-sm font-bold text-green-600">✅ Pago</span>' : ''));
             const h3 = item.querySelector('h3');
             if (h3) {
-                // Substituir apenas o título para garantir um único rótulo visível
-                h3.innerHTML = `Nota #${pedido.id} ${labelHtml}`;
+                // Garantir que o título mostre apenas o texto da nota (badge renderizado separadamente dentro do card)
+                h3.textContent = `Nota #${pedido.id}`;
             }
         });
     } catch (e) { console.warn('Erro ao aplicar badge fallback', e); }
