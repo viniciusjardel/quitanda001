@@ -103,6 +103,8 @@ async function loadData() {
             unit: p.unit,
             units: p.units ? p.units.join(', ') : 'N/A'
         })));
+        // Ordenar produtos alfabeticamente por nome para exibição no admin
+        try{ products.sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR', { sensitivity: 'base' })); }catch(e){ console.warn('Erro ao ordenar produtos no admin', e); }
     } catch (error) {
         console.error('%c❌ Erro ao carregar da API:', 'color: red;', error.message);
         alert(`⚠️ Erro ao conectar com a API: ${error.message}\n\nVerifique se o backend está online.`);
@@ -354,7 +356,28 @@ function editProduct(id) {
     }
     
     // Carregar categoria
-    document.getElementById('productCategory').value = product.category || '';
+    // Preencher seleção de categorias (suporta string, array ou JSON string)
+    try{
+        const catEl = document.getElementById('productCategory');
+        if(catEl){
+            // limpar seleção
+            Array.from(catEl.options).forEach(opt => opt.selected = false);
+            let cats = product.category || null;
+            if(typeof cats === 'string'){
+                try{ const parsed = JSON.parse(cats); if(Array.isArray(parsed)) cats = parsed; }
+                catch(e){ /* manter string */ }
+            }
+            if(Array.isArray(cats)){
+                cats.forEach(c => {
+                    const opt = Array.from(catEl.options).find(o => o.value === c);
+                    if(opt) opt.selected = true;
+                });
+            } else if(typeof cats === 'string' && cats){
+                const opt = Array.from(catEl.options).find(o => o.value === cats);
+                if(opt) opt.selected = true;
+            }
+        }
+    }catch(e){ console.warn('Erro ao preencher categorias no modal', e); }
     
     document.getElementById('imagePreview').classList.remove('hidden');
     document.getElementById('previewImg').src = product.image;
@@ -451,11 +474,15 @@ async function saveProduct(e) {
         return;
     }
     
+    // Capturar múltiplas categorias (novo formato: array) - compatibilidade com select múltiplo
+    const selectedCategories = Array.from(document.getElementById('productCategory').selectedOptions || [])
+        .map(o => o.value).filter(v => v);
+
     const productData = {
         id: editingProductId || 'prod_' + Date.now(),
         name: productName,
         description: document.getElementById('productDescription').value,
-        category: document.getElementById('productCategory').value || null,
+        category: selectedCategories.length > 0 ? selectedCategories : null,
         price: Object.values(unitPrices)[0], // Usar o primeiro preço como padrão
         prices: unitPrices,              // Novos preços por unidade
         unit: selectedUnits[0], // Manter compatibilidade com sistemas antigos

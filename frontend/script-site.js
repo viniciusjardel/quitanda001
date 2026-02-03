@@ -322,16 +322,31 @@ async function fetchProductsFromAPI() {
     });
     
     console.log('✅ Produtos carregados da API:', data.length);
+    // Normalizar category: se for string JSON, converter para array
+    try{
+      data = data.map(p => {
+        if (p.category && typeof p.category === 'string'){
+          try{ const parsed = JSON.parse(p.category); if (Array.isArray(parsed)) p.category = parsed; }catch(e){}
+        }
+        return p;
+      });
+    }catch(e){ }
     return data;
   } catch (error) {
     console.error('❌ Erro ao buscar produtos da API:', error);
     console.log('📦 Usando fallback localStorage...');
-    return getStoredProducts();
+    const stored = getStoredProducts();
+    try{ stored.sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR', { sensitivity: 'base' })); }catch(e){}
+    return stored;
   }
 }
 
 async function loadProducts() {
   products = await fetchProductsFromAPI();
+  // Ordenar produtos alfabeticamente por nome (pt-BR, insensível a maiúsculas)
+  try{
+    products.sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR', { sensitivity: 'base' }));
+  }catch(e){ console.warn('Erro ao ordenar produtos', e); }
   renderProducts(products);
 }
 
@@ -405,7 +420,22 @@ window.filterByCategory = cat => {
   document.querySelector(`[data-category="${cat}"]`)?.classList.add('active');
 
   if (cat === 'all') return renderProducts(products);
-  renderProducts(products.filter(p => p.category === cat));
+
+  const filtered = products.filter(p => {
+    const prodCat = p.category;
+    if (!prodCat) return false;
+    if (Array.isArray(prodCat)) return prodCat.includes(cat);
+    if (typeof prodCat === 'string') {
+      try {
+        const parsed = JSON.parse(prodCat);
+        if (Array.isArray(parsed)) return parsed.includes(cat);
+      } catch(e) {}
+      return prodCat === cat;
+    }
+    return false;
+  });
+
+  renderProducts(filtered);
 };
 
 document.getElementById('searchInput').addEventListener('input', e => {
@@ -958,6 +988,23 @@ window.selectDeliveryType = type => {
   
   // Mostrar botão de confirmar entrega
   document.getElementById('confirmDeliveryBtn').classList.remove('hidden');
+
+  // Atualizar visual do total imediatamente ao selecionar o tipo de entrega
+  try{
+    const subtotal = cart.reduce((sum, i) => sum + i.price * i.quantity, 0);
+    const deliveryFee = deliveryType === 'delivery' ? 3 : 0;
+    const total = subtotal + deliveryFee;
+
+    const deliveryTotalEl = document.getElementById('deliveryTotal');
+    const deliveryTotalValue = document.getElementById('deliveryTotalValue');
+    const deliveryTotalLabel = document.getElementById('deliveryTotalLabel');
+    const deliveryTotalBreakdown = document.getElementById('deliveryTotalBreakdown');
+
+    if(deliveryTotalEl) deliveryTotalEl.classList.remove('hidden');
+    if(deliveryTotalValue) deliveryTotalValue.innerText = formatPrice(total);
+    if(deliveryTotalLabel) deliveryTotalLabel.innerText = deliveryType === 'delivery' ? 'Total com Delivery:' : 'Total:';
+    if(deliveryTotalBreakdown) deliveryTotalBreakdown.innerText = deliveryFee > 0 ? `Subtotal: ${formatPrice(subtotal)} + Taxa: ${formatPrice(deliveryFee)}` : `Subtotal: ${formatPrice(subtotal)}`;
+  }catch(e){ console.warn('Erro ao atualizar total após selecionar tipo de entrega', e); }
 };
 
 // =======================
@@ -1083,6 +1130,51 @@ window.selectPaymentMethod = method => {
 
   confirmModal.classList.remove('hidden');
 };
+
+// Resetar estado/valores do modal de entrega (usar após finalizar pedido)
+function resetDeliveryModalUI(){
+  try{
+    deliveryType = null;
+    paymentMethod = null;
+
+    const deliveryTotal = document.getElementById('deliveryTotal');
+    if(deliveryTotal) deliveryTotal.classList.add('hidden');
+
+    const deliveryTotalValue = document.getElementById('deliveryTotalValue');
+    if(deliveryTotalValue) deliveryTotalValue.innerText = 'R$ 0,00';
+
+    const deliveryTotalLabel = document.getElementById('deliveryTotalLabel');
+    if(deliveryTotalLabel) deliveryTotalLabel.innerText = 'Total:';
+
+    const deliveryTotalBreakdown = document.getElementById('deliveryTotalBreakdown');
+    if(deliveryTotalBreakdown) deliveryTotalBreakdown.innerText = '';
+
+    const paymentMethodSection = document.getElementById('paymentMethodSection');
+    if(paymentMethodSection) paymentMethodSection.classList.add('hidden');
+
+    const confirmBtn = document.getElementById('confirmDeliveryBtn');
+    if(confirmBtn) confirmBtn.classList.add('hidden');
+
+    // limpar inputs
+    ['deliveryName','deliveryPhone','deliveryAddress','deliveryBloco','deliveryApto','cashReceivedInput'].forEach(id=>{
+      const el = document.getElementById(id);
+      if(el) el.value = '';
+    });
+
+    const pickupForm = document.getElementById('pickupForm');
+    const deliveryFormEl = document.getElementById('deliveryForm');
+    if(pickupForm) pickupForm.classList.add('hidden');
+    if(deliveryFormEl) deliveryFormEl.classList.add('hidden');
+
+    const localBtn = document.getElementById('localBtn');
+    const deliveryBtn = document.getElementById('deliveryBtn');
+    if(localBtn) localBtn.classList.remove('border-green-500','bg-green-100','border-2');
+    if(deliveryBtn) deliveryBtn.classList.remove('border-blue-500','bg-blue-100','border-2');
+
+    const cashChangeEl = document.getElementById('cashChange');
+    if(cashChangeEl){ cashChangeEl.textContent = ''; cashChangeEl.classList.remove('text-green-700','text-red-600'); }
+  }catch(e){ console.warn('Erro em resetDeliveryModalUI', e); }
+}
 
 window.confirmPaymentMethod = async () => {
   window.closePaymentConfirmModal();
@@ -1287,6 +1379,8 @@ ${deliveryType === 'delivery' ? '🚗 *Entrega: Sim (+R$ 3,00)*' : '🏪 *Retira
       cart = [];
       saveCart();
       updateCartUI();
+      // Garantir que o modal de entrega esteja zerado após finalizar pedido
+      try{ resetDeliveryModalUI(); }catch(e){console.warn('resetDeliveryModalUI falhou no fluxo PIX', e);} 
       
       setTimeout(() => {
         closePixModal();
@@ -1580,6 +1674,8 @@ ${deliveryType === 'delivery' ? '🚗 *Entrega: Sim (+R$ 3,00)*' : '🏪 *Retira
   cart = [];
   saveCart();
   updateCartUI();
+  // Garantir que o modal de entrega esteja zerado após finalizar pedido
+  try{ resetDeliveryModalUI(); }catch(e){console.warn('resetDeliveryModalUI falhou no fluxo padrão', e);} 
 
   // Fechar modals e mostrar sucesso
   closeDeliveryModal();

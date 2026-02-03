@@ -289,10 +289,19 @@ app.post('/produtos', async (req, res) => {
 
     console.log('📝 Criando produto:', { id, name, price: priceNum, unit, units, prices });
 
+    // Converter category para JSON quando for array
+    let categoryToStore = null;
+    if (category) {
+      if (Array.isArray(category)) categoryToStore = JSON.stringify(category);
+      else if (typeof category === 'string') {
+        try { JSON.parse(category); categoryToStore = category; } catch(e) { categoryToStore = category; }
+      }
+    }
+
     await pool.query(
       `INSERT INTO produtos (id, name, price, prices, image, category, unit, units, color, description)
        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-      [id, name, priceNum, pricesJson, image || null, category || null, unit, unitsJson, color || null, description || null]
+      [id, name, priceNum, pricesJson, image || null, categoryToStore || null, unit, unitsJson, color || null, description || null]
     );
     
     console.log(`✅ Produto criado: ${name} (${id})`);
@@ -373,11 +382,20 @@ app.put('/produtos/:id', async (req, res) => {
       return res.status(400).json({ error: 'Preço inválido' });
     }
 
+    // Converter category para JSON se for array
+    let categoryToStore = null;
+    if (category) {
+      if (Array.isArray(category)) categoryToStore = JSON.stringify(category);
+      else if (typeof category === 'string') {
+        try { JSON.parse(category); categoryToStore = category; } catch(e) { categoryToStore = category; }
+      }
+    }
+
     await pool.query(
       `UPDATE produtos 
        SET name = $1, price = $2, prices = $3, image = $4, category = $5, unit = $6, units = $7, color = $8, description = $9, updated_at = CURRENT_TIMESTAMP
        WHERE id = $10`,
-      [name || null, priceNum, pricesJson, image || null, category || null, unit || null, unitsJson, color || null, description || null, id]
+      [name || null, priceNum, pricesJson, image || null, categoryToStore || null, unit || null, unitsJson, color || null, description || null, id]
     );
     
     console.log(`✅ Produto atualizado: ${id}`);
