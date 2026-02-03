@@ -37,6 +37,7 @@ async function initializeTables() {
         units TEXT,
         color TEXT,
         description TEXT,
+        status TEXT DEFAULT 'available',
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       );
@@ -66,6 +67,8 @@ async function initializeTables() {
     
     // Migração: Adicionar coluna prices se não existir
     await addPricesColumnIfNotExists();
+    // Migração: Adicionar coluna status se não existir
+    await addStatusColumnIfNotExists();
     // Migração: Adicionar colunas de troco/cash se não existirem
     await addCashColumnsIfNotExists();
   } catch (error) {
@@ -129,6 +132,26 @@ async function addPricesColumnIfNotExists() {
   }
 }
 
+// Adicionar coluna status se não existir
+async function addStatusColumnIfNotExists() {
+  try {
+    const checkColumn = await pool.query(`
+      SELECT column_name 
+      FROM information_schema.columns 
+      WHERE table_name = 'produtos' AND column_name = 'status'
+    `);
+    if (checkColumn.rows.length === 0) {
+      console.log('🔄 Adicionando coluna status à tabela produtos...');
+      await pool.query(`ALTER TABLE produtos ADD COLUMN status TEXT DEFAULT 'available';`);
+      console.log('✅ Coluna status adicionada com sucesso!');
+    } else {
+      console.log('✅ Coluna status já existe na tabela produtos');
+    }
+  } catch (error) {
+    console.error('⚠️ Erro ao verificar/adicionar coluna status:', error.message);
+  }
+}
+
 // Inicializar tabelas
 await initializeTables();
 
@@ -173,12 +196,13 @@ app.get('/produtos', async (req, res) => {
         }
       }
       
-      return {
-        ...p,
-        price: parseFloat(p.price),
-        units: units,
-        prices: prices
-      };
+        return {
+          ...p,
+          price: parseFloat(p.price),
+          units: units,
+          prices: prices,
+          status: p.status || 'available'
+        };
     });
     console.log(`📦 GET /produtos: ${produtos.length} produtos`);
     res.json(produtos);
@@ -241,7 +265,7 @@ app.get('/produtos/:id', async (req, res) => {
 // =======================
 app.post('/produtos', async (req, res) => {
   try {
-    const { id, name, price, prices, image, category, unit, units, color, description } = req.body;
+    const { id, name, price, prices, image, category, unit, units, color, description, status } = req.body;
 
     // Validar campos obrigatórios
     if (!id || !name || price === undefined || !unit) {
@@ -299,9 +323,9 @@ app.post('/produtos', async (req, res) => {
     }
 
     await pool.query(
-      `INSERT INTO produtos (id, name, price, prices, image, category, unit, units, color, description)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)`,
-      [id, name, priceNum, pricesJson, image || null, categoryToStore || null, unit, unitsJson, color || null, description || null]
+      `INSERT INTO produtos (id, name, price, prices, image, category, unit, units, color, description, status)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)`,
+      [id, name, priceNum, pricesJson, image || null, categoryToStore || null, unit, unitsJson, color || null, description || null, status || 'available']
     );
     
     console.log(`✅ Produto criado: ${name} (${id})`);
@@ -327,7 +351,7 @@ app.post('/produtos', async (req, res) => {
 app.put('/produtos/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const { name, price, prices, image, category, unit, units, color, description } = req.body;
+    const { name, price, prices, image, category, unit, units, color, description, status } = req.body;
 
     console.log('🔍 PUT /produtos/:id recebido:', {
       id,
@@ -393,9 +417,9 @@ app.put('/produtos/:id', async (req, res) => {
 
     await pool.query(
       `UPDATE produtos 
-       SET name = $1, price = $2, prices = $3, image = $4, category = $5, unit = $6, units = $7, color = $8, description = $9, updated_at = CURRENT_TIMESTAMP
-       WHERE id = $10`,
-      [name || null, priceNum, pricesJson, image || null, categoryToStore || null, unit || null, unitsJson, color || null, description || null, id]
+       SET name = $1, price = $2, prices = $3, image = $4, category = $5, unit = $6, units = $7, color = $8, description = $9, status = $10, updated_at = CURRENT_TIMESTAMP
+       WHERE id = $11`,
+      [name || null, priceNum, pricesJson, image || null, categoryToStore || null, unit || null, unitsJson, color || null, description || null, status || 'available', id]
     );
     
     console.log(`✅ Produto atualizado: ${id}`);

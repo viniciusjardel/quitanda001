@@ -404,6 +404,15 @@ function editProduct(id) {
             }
         }
     }catch(e){ console.warn('Erro ao preencher categorias no modal', e); }
+
+    // Carregar status do produto (compatibilidade com booleanos ou strings)
+    try{
+        let st = product.status;
+        if (typeof st === 'boolean') st = st ? 'available' : 'unavailable';
+        if (!st) st = 'available';
+        const radio = document.querySelector(`input[name="productStatus"][value="${st}"]`);
+        if (radio) radio.checked = true;
+    }catch(e){ /* ignorar */ }
     
     document.getElementById('imagePreview').classList.remove('hidden');
     document.getElementById('previewImg').src = product.image;
@@ -516,6 +525,12 @@ async function saveProduct(e) {
         image: finalImage,
         color: document.getElementById('productColor').value || null
     };
+
+    // Capturar status do produto (disponível / indisponível)
+    try{
+        const status = document.querySelector('input[name="productStatus"]:checked')?.value || 'available';
+        productData.status = status;
+    }catch(e){ productData.status = 'available'; }
     
     console.log('%c💾 Dados sendo salvos:', 'color: green; font-weight: bold;', productData);
     
@@ -722,7 +737,9 @@ function renderPedidos(pedidos) {
 
         const statusTextMap = { 'pendente': '🟡 Pagamento Pendente', 'cancelado': '❌ Pedido Cancelado', 'pago': '✅ Pago' };
         const paymentBadge = statusTextMap[statusCategory] || (p.payment_status || '');
-        const paymentColor = statusCategory === 'pago' ? 'bg-green-100 text-green-800' : (statusCategory === 'pendente' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800');
+        const paymentColor = statusCategory === 'pago' ? 'bg-green-100 text-green-800' : (statusCategory === 'pendente' ? 'bg-yellow-100 text-yellow-800' : '');
+        // Para pedido cancelado usamos estilo inline (evita regras agressivas de CSS que ocultam elementos com classes contendo "bg-red")
+        const cancelInlineStyle = statusCategory === 'cancelado' ? 'background:#fee2e2;color:#991b1b' : '';
         const statusBgClass = statusCategory === 'pago' ? 'bg-green-50' : (statusCategory === 'pendente' ? 'bg-yellow-50' : (statusCategory === 'cancelado' ? 'bg-red-50' : ''));
         
         return `
@@ -733,11 +750,14 @@ function renderPedidos(pedidos) {
                     <p class="text-sm text-gray-700 font-semibold truncate">${p.customer_name}</p>
                     <p class="text-sm text-gray-500 truncate">📱 ${p.customer_phone}</p>
                     <div class="mt-2">
-                        <span class="inline-block text-sm font-bold py-1 px-3 rounded-full ${statusCategory === 'pago' ? 'bg-green-100 text-green-800' : (statusCategory === 'pendente' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800')}">${paymentBadge}</span>
+                        <p class="text-sm text-gray-600">${p.payment_method} • ${p.delivery_type === 'delivery' ? '🚗 Entrega' : '🏪 Retirada'}</p>
                     </div>
                 </div>
                 <div class="flex-shrink-0 text-right sm:text-right">
-                    <p class="text-sm text-gray-600">${p.payment_method} • ${p.delivery_type === 'delivery' ? '🚗 Entrega' : '🏪 Retirada'}</p>
+                    <div class="mb-2">
+                        <span class="inline-block text-sm font-bold py-1 px-3 rounded-full ${paymentColor}" ${cancelInlineStyle ? `style="${cancelInlineStyle}"` : ''}>${paymentBadge}</span>
+                    </div>
+                    <p class="text-sm text-gray-600">&nbsp;</p>
                 </div>
             </div>
 

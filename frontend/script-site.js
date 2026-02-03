@@ -367,6 +367,14 @@ async function loadProducts() {
   renderProducts(products);
 }
 
+window.showProductUnavailable = (id) => {
+  try{
+    const p = products.find(x => String(x.id) === String(id)) || {};
+    const name = p.name || 'Este produto';
+    alert(`${name} está indisponível no momento.`);
+  }catch(e){ alert('Produto indisponível no momento.'); }
+}
+
 function renderProducts(list) {
   const grid = document.getElementById('productsGrid');
   const empty = document.getElementById('emptyState');
@@ -382,7 +390,7 @@ function renderProducts(list) {
 
   list.forEach(product => {
     const card = document.createElement('div');
-    card.className = 'product-card bg-white rounded-xl shadow-lg p-3 sm:p-4 flex flex-col';
+    card.className = 'product-card relative bg-white rounded-xl shadow-lg p-3 sm:p-4 flex flex-col';
 
     // Obter unidades (pode ser array ou string)
     const units = Array.isArray(product.units) ? product.units : [product.unit];
@@ -411,17 +419,23 @@ function renderProducts(list) {
       `;
     }
 
+    // Determinar disponibilidade
+    const rawStatus = product.status;
+    const statusStr = (typeof rawStatus === 'boolean') ? (rawStatus ? 'available' : 'unavailable') : (rawStatus || 'available');
+    const isAvailable = !(/unavail|indispon|unavailable|false|0/i.test(String(statusStr)));
+
     card.innerHTML = `
       <img src="${product.image}" class="h-36 sm:h-48 w-full object-cover rounded-lg mb-2 sm:mb-3">
+      ${!isAvailable ? `<div class="absolute inset-0 rounded-lg flex items-center justify-center" style="background: rgba(255,255,255,0.82);"><span class="text-red-600 font-bold text-lg">Indisponível</span></div>` : ''}
       <h3 class="text-lg sm:text-xl font-bold text-gray-800 line-clamp-2">${product.name}</h3>
       <p class="text-gray-500 text-xs sm:text-sm mb-2 sm:mb-3 line-clamp-2">${product.description || ''}</p>
       <div style="margin-bottom: 8px;">
         ${pricesHTML}
       </div>
-      <button class="mt-auto py-2 sm:py-3 rounded-lg text-white font-bold text-sm sm:text-base"
-        style="background:${product.color || '#7c3aed'}"
-        onclick="window.openProductSelection('${product.id}')">
-        Adicionar
+      <button class="mt-auto py-2 sm:py-3 rounded-lg text-white font-bold text-sm sm:text-base" 
+        style="background:${isAvailable ? (product.color || '#7c3aed') : '#9CA3AF'}" 
+        ${isAvailable ? `onclick="window.openProductSelection('${product.id}')"` : `onclick="window.showProductUnavailable('${product.id}')"`}>
+        ${isAvailable ? 'Adicionar' : 'Indisponível'}
       </button>
     `;
 
@@ -466,6 +480,14 @@ document.getElementById('searchInput').addEventListener('input', e => {
 window.openProductSelection = id => {
   selectedProduct = products.find(p => p.id === id);
   if (!selectedProduct) return;
+  // Bloquear seleção se produto indisponível
+  const rawStatus = selectedProduct.status;
+  const statusStr = (typeof rawStatus === 'boolean') ? (rawStatus ? 'available' : 'unavailable') : (rawStatus || 'available');
+  const isAvailable = !(/unavail|indispon|unavailable|false|0/i.test(String(statusStr)));
+  if (!isAvailable) {
+    window.showProductUnavailable(id);
+    return;
+  }
   
   // Determinar as unidades disponíveis
   const units = Array.isArray(selectedProduct.units) ? selectedProduct.units : [selectedProduct.unit];
@@ -524,6 +546,12 @@ window.closeUnitModal = () => {
 // =======================
 window.openQuantityModal = id => {
   selectedProduct = products.find(p => p.id === id);
+  if (!selectedProduct) return;
+  // Bloquear se indisponível
+  const rawStatus = selectedProduct.status;
+  const statusStr = (typeof rawStatus === 'boolean') ? (rawStatus ? 'available' : 'unavailable') : (rawStatus || 'available');
+  const isAvailable = !(/unavail|indispon|unavailable|false|0/i.test(String(statusStr)));
+  if (!isAvailable) { window.showProductUnavailable(id); return; }
   selectedQuantity = 0;
 
   document.getElementById('modalProductName').innerText = selectedProduct.name;
