@@ -426,15 +426,20 @@ function renderProducts(list) {
 
     card.innerHTML = `
       <img src="${product.image}" class="h-36 sm:h-48 w-full object-cover rounded-lg mb-2 sm:mb-3">
-      ${!isAvailable ? `<div class="absolute inset-0 rounded-lg flex items-center justify-center" style="background: rgba(255,255,255,0.82);"><span class="text-red-600 font-bold text-lg">Indisponível</span></div>` : ''}
+      ${!isAvailable ? `<div class="absolute inset-0 rounded-lg flex items-center justify-center bg-black bg-opacity-30 z-10 pointer-events-auto">
+          <div class="bg-white/90 text-red-600 font-extrabold px-4 py-2 rounded-full shadow-lg flex items-center gap-2">
+            <svg xmlns="http://www.w3.org/2000/svg" class="w-4 h-4" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true"><path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.516 9.814A1.75 1.75 0 0 1 16.87 16h-9.74a1.75 1.75 0 0 1-1.39-2.087L8.257 3.1zM11 13a1 1 0 1 1-2 0 1 1 0 0 1 2 0zm-1-4a.75.75 0 0 1 .75.75v2.5a.75.75 0 0 1-1.5 0v-2.5A.75.75 0 0 1 10 9z" clip-rule="evenodd"/></svg>
+            <span class="text-sm">Indisponível</span>
+          </div>
+        </div>` : ''}
       <h3 class="text-lg sm:text-xl font-bold text-gray-800 line-clamp-2">${product.name}</h3>
       <p class="text-gray-500 text-xs sm:text-sm mb-2 sm:mb-3 line-clamp-2">${product.description || ''}</p>
       <div style="margin-bottom: 8px;">
         ${pricesHTML}
       </div>
-      <button class="mt-auto py-2 sm:py-3 rounded-lg text-white font-bold text-sm sm:text-base" 
-        style="background:${isAvailable ? (product.color || '#7c3aed') : '#9CA3AF'}" 
-        ${isAvailable ? `onclick="window.openProductSelection('${product.id}')"` : `onclick="window.showProductUnavailable('${product.id}')"`}>
+      <button class="mt-auto py-2 sm:py-3 rounded-lg text-white font-bold text-sm sm:text-base transition-shadow"
+        style="background:${isAvailable ? (product.color || '#7c3aed') : '#9CA3AF'}; box-shadow: ${isAvailable ? '0 6px 18px rgba(124,58,237,0.18)' : 'none'}"
+        ${isAvailable ? `onclick="window.openProductSelection('${product.id}')"` : 'disabled aria-disabled="true"'}>
         ${isAvailable ? 'Adicionar' : 'Indisponível'}
       </button>
     `;
