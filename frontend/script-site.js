@@ -227,13 +227,15 @@ function openMyOrdersModal(){
   modal.id = 'myOrdersModal';
   modal.style.cssText = 'position:fixed;inset:0;display:flex;align-items:center;justify-content:center;z-index:99999;';
   modal.innerHTML = `
-    <div style="width:90%;max-width:720px;background:white;border-radius:12px;padding:18px;box-shadow:0 12px 48px rgba(0,0,0,0.25);">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-        <h3 style="margin:0;font-size:18px;font-weight:700">Meus Pedidos</h3>
-        <button id="closeMyOrders" style="background:transparent;border:none;font-size:18px;">✕</button>
+    <div class="w-[92%] max-w-2xl bg-white rounded-lg p-4 sm:p-6 shadow-2xl">
+      <div class="flex items-center justify-between mb-4">
+        <h3 class="text-lg sm:text-xl font-bold">Meus Pedidos</h3>
+        <button id="closeMyOrders" class="text-gray-600 hover:text-gray-800 text-xl bg-transparent border-none">✕</button>
       </div>
-      <div id="myOrdersList" style="max-height:60vh;overflow:auto;"></div>
-      <div style="text-align:right;margin-top:12px;"><button id="refreshMyOrders" style="padding:8px 14px;border-radius:8px;background:#10b981;color:white;font-weight:700;border:none;">Atualizar</button></div>
+      <div id="myOrdersList" class="max-h-[60vh] overflow-auto space-y-3"></div>
+      <div class="text-right mt-4">
+        <button id="refreshMyOrders" class="inline-flex items-center gap-2 px-4 py-2 rounded-lg bg-green-500 hover:bg-green-600 text-white font-semibold">🔄 Atualizar</button>
+      </div>
     </div>
   `;
   document.body.appendChild(modal);
@@ -247,7 +249,7 @@ function openMyOrdersModal(){
 async function renderMyOrders(){
   const listEl = document.getElementById('myOrdersList');
   if (!listEl) return;
-  listEl.innerHTML = '<p style="color:#666">Carregando...</p>';
+  listEl.innerHTML = '<p class="text-gray-600">Carregando...</p>';
 
   const orders = getLocalOrders();
   if (!orders.length){ listEl.innerHTML = '<p style="color:#666">Nenhum pedido recente encontrado.</p>'; return; }
@@ -255,8 +257,22 @@ async function renderMyOrders(){
   listEl.innerHTML = '';
   for (const o of orders){
     const container = document.createElement('div');
-    container.style.cssText = 'border:1px solid #eee;border-radius:8px;padding:10px;margin-bottom:8px;';
-    container.innerHTML = `<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px;"><div><strong>Pedido #${o.id}</strong><div style="font-size:12px;color:#666">${o.timestamp}</div></div><div id="status-${o.id}" style="font-weight:700;color:#999">Carregando...</div></div><div id="items-${o.id}"> </div><div style="margin-top:8px;font-size:14px;font-weight:700">Total: ${o.total ? formatPrice(o.total) : '-'}</div>`;
+    container.className = 'bg-white border border-gray-100 rounded-lg p-4 shadow-sm';
+    container.innerHTML = `
+      <div class="flex items-start justify-between gap-3">
+        <div class="min-w-0">
+          <div class="flex items-center gap-3">
+            <strong class="text-sm">Pedido #${o.id}</strong>
+            <span class="text-xs text-gray-500">${o.timestamp}</span>
+          </div>
+          <div id="items-${o.id}" class="mt-2 text-sm text-gray-700"></div>
+        </div>
+        <div class="flex flex-col items-end gap-2">
+          <div id="status-${o.id}" class="text-sm font-semibold text-gray-600">Carregando...</div>
+          <div class="text-green-600 font-bold">${o.total ? formatPrice(o.total) : '-'}</div>
+        </div>
+      </div>
+    `;
     listEl.appendChild(container);
 
     // buscar no backend a versão mais atual do pedido
@@ -281,8 +297,9 @@ document.addEventListener('DOMContentLoaded', ()=>{
     if (!document.getElementById('myOrdersBtn')){
       const btn = document.createElement('button');
       btn.id = 'myOrdersBtn';
-      btn.textContent = 'Meus Pedidos';
-      btn.style.cssText = 'position:fixed;right:18px;bottom:18px;z-index:99998;padding:10px 14px;background:#7c3aed;color:#fff;border:none;border-radius:10px;font-weight:700;box-shadow:0 6px 18px rgba(0,0,0,0.12);';
+      btn.className = 'fixed right-4 bottom-4 z-50 inline-flex items-center gap-2 px-4 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-full font-bold shadow-lg';
+      btn.innerHTML = '🧾 <span class="ml-1">Meus Pedidos</span>';
+      btn.setAttribute('aria-label','Abrir Meus Pedidos');
       btn.addEventListener('click', openMyOrdersModal);
       document.body.appendChild(btn);
     }
