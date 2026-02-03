@@ -358,23 +358,26 @@ function editProduct(id) {
     // Carregar categoria
     // Preencher seleção de categorias (suporta string, array ou JSON string)
     try{
-        const catEl = document.getElementById('productCategory');
-        if(catEl){
-            // limpar seleção
-            Array.from(catEl.options).forEach(opt => opt.selected = false);
+        // Preencher checkboxes de categoria (novo layout)
+        const container = document.getElementById('productCategory');
+        if(container){
+            // desmarcar todos
+            Array.from(container.querySelectorAll('.product-category-checkbox')).forEach(cb => cb.checked = false);
+
             let cats = product.category || null;
             if(typeof cats === 'string'){
                 try{ const parsed = JSON.parse(cats); if(Array.isArray(parsed)) cats = parsed; }
                 catch(e){ /* manter string */ }
             }
+
             if(Array.isArray(cats)){
                 cats.forEach(c => {
-                    const opt = Array.from(catEl.options).find(o => o.value === c);
-                    if(opt) opt.selected = true;
+                    const cb = container.querySelector(`.product-category-checkbox[value="${c}"]`);
+                    if(cb) cb.checked = true;
                 });
             } else if(typeof cats === 'string' && cats){
-                const opt = Array.from(catEl.options).find(o => o.value === cats);
-                if(opt) opt.selected = true;
+                const cb = container.querySelector(`.product-category-checkbox[value="${cats}"]`);
+                if(cb) cb.checked = true;
             }
         }
     }catch(e){ console.warn('Erro ao preencher categorias no modal', e); }
@@ -474,9 +477,9 @@ async function saveProduct(e) {
         return;
     }
     
-    // Capturar múltiplas categorias (novo formato: array) - compatibilidade com select múltiplo
-    const selectedCategories = Array.from(document.getElementById('productCategory').selectedOptions || [])
-        .map(o => o.value).filter(v => v);
+    // Capturar múltiplas categorias (novo formato: array) - checkboxes
+    const selectedCategories = Array.from(document.querySelectorAll('.product-category-checkbox:checked') || [])
+        .map(cb => cb.value).filter(v => v);
 
     const productData = {
         id: editingProductId || 'prod_' + Date.now(),

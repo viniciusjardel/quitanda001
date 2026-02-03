@@ -162,14 +162,25 @@
 
                 <div>
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Categorias (opcional) — selecione uma ou mais</label>
-                    <select id="productCategory" multiple size="4"
-                            class="w-full px-4 py-2 border-2 border-gray-300 rounded-lg focus:border-purple-500 focus:outline-none">
-                        <option value="frutas">🍎 Frutas</option>
-                        <option value="verduras">🥬 Verduras</option>
-                        <option value="legumes">🥕 Legumes</option>
-                        <option value="hortalicas">🌱 Hortaliças</option>
-                    </select>
-                    <p class="text-xs text-gray-500 mt-1">Use Ctrl/Cmd+clique para selecionar múltiplas categorias.</p>
+                    <div id="productCategory" class="grid grid-cols-2 gap-2 p-2 border-2 border-gray-200 rounded-lg">
+                        <label class="flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-50">
+                            <input type="checkbox" class="product-category-checkbox w-4 h-4" value="frutas">
+                            <span class="font-medium">🍎 Frutas</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-50">
+                            <input type="checkbox" class="product-category-checkbox w-4 h-4" value="verduras">
+                            <span class="font-medium">🥬 Verduras</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-50">
+                            <input type="checkbox" class="product-category-checkbox w-4 h-4" value="legumes">
+                            <span class="font-medium">🥕 Legumes</span>
+                        </label>
+                        <label class="flex items-center gap-3 p-2 rounded cursor-pointer hover:bg-gray-50">
+                            <input type="checkbox" class="product-category-checkbox w-4 h-4" value="hortalicas">
+                            <span class="font-medium">🌱 Hortaliças</span>
+                        </label>
+                    </div>
+                    <p class="text-xs text-gray-500 mt-1">Clique nas caixas para selecionar múltiplas categorias.</p>
                 </div>
 
                 <div>
