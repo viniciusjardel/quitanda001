@@ -132,7 +132,7 @@ function setupAutoRefresh() {
                 if (JSON.stringify(novosProdutos) !== JSON.stringify(products)) {
                     console.log('%c🔄 Produtos atualizados de outra fonte!', 'color: purple;');
                     products = novosProdutos;
-                    renderProducts();
+                    renderProductsFiltered(document.getElementById('adminSearchProducts')?.value || '');
                 }
             }
         } catch (error) {
@@ -144,18 +144,30 @@ function setupAutoRefresh() {
 // =======================
 // RENDERIZAR LISTA DE PRODUTOS
 // =======================
-function renderProducts() {
+function renderProductsFiltered(term = '') {
     const list = document.getElementById('productsList');
     const empty = document.getElementById('emptyProducts');
-    
-    if (products.length === 0) {
+
+    if (!Array.isArray(products) || products.length === 0) {
         list.innerHTML = '';
         empty.classList.remove('hidden');
         return;
     }
-    
+
+    // ordenar cópia dos produtos alfabeticamente
+    const normalized = products.slice().sort((a,b) => String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR', { sensitivity: 'base' }));
+
+    // filtrar por termo, se informado
+    const filtered = term && term.trim() !== '' ? normalized.filter(p => String(p.name || '').toLowerCase().includes(term.toLowerCase())) : normalized;
+
+    if (filtered.length === 0) {
+        list.innerHTML = '';
+        empty.classList.remove('hidden');
+        return;
+    }
+
     empty.classList.add('hidden');
-    list.innerHTML = products.map(p => `
+    list.innerHTML = filtered.map(p => `
         <div class="flex items-center gap-4 bg-gray-50 rounded-xl p-4 hover:bg-gray-100 transition">
             <img src="${p.image}" alt="${p.name}" class="w-24 h-24 object-cover rounded-lg">
             <div class="flex-1">
@@ -177,6 +189,9 @@ function renderProducts() {
         </div>
     `).join('');
 }
+
+// compatibilidade: antiga chamada sem filtro
+function renderProducts(){ renderProductsFiltered(''); }
 
 // =======================
 // ATUALIZAR DISPLAY DE UNIDADES
@@ -239,6 +254,14 @@ document.addEventListener('DOMContentLoaded', () => {
             updateUnitsDisplay();
         }
     });
+
+    // Barra de pesquisa no admin
+    const adminSearch = document.getElementById('adminSearchProducts');
+    if(adminSearch){
+        adminSearch.addEventListener('input', (e) => {
+            renderProductsFiltered(e.target.value || '');
+        });
+    }
 });
 
 // =======================
